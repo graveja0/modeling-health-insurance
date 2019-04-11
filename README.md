@@ -1,13 +1,119 @@
-A Sufficient Statistics Approach to Modeling Health Insurance Market
-Reform
+A Sufficient Statistics Approach to Ex Ante Health Policy Evaluation
 ================
+John A. Graves
 
-The objective of this repository is to summarize current work on a
-sufficient statistics approach to modeling reform of U.S. insurance
-markets.
+# Introduction
 
-# Overview of Approach
+The objective of this document is to sketch out some initial thoughts
+and analytics around a unified framework for ex ante policy evaluation
+in health care.
+
+## Background and Motivation
+
+Models projecting the impact of health reforms on health insurance
+programs and markets play an important role in shaping the contours of
+U.S. health policy. In 2017, for example, Congressional attempts
+Congressional attempts to repeal and replace the 2010 Affordable Care
+Act (ACA). These efforts collapsed, in part, under public outcry after
+the Congressional Budget Office (CBO)
+[projected](https://www.nytimes.com/2017/05/24/us/politics/cbo-congressional-budget-office-health-care.html)
+that upwards of 23 million people would become uninsured. The twists and
+turns of earlier debates over the ACA–and before it, [the Clinton health
+plan](figures/01_nyt-clinton-cbo.png)–also were shaped by modelers’
+assessments of how reform would impact insurance coverage, premiums,
+health care spending, and government costs.
+
+Microsimulation models used by the CBO and by others to produce these
+estimates draw on a large and growing literature on economic theory, and
+on evaluations of past state and federal reform efforts. Yet while
+modelers often draw on the same evidence base as inputs into their
+models, microsimulation models differ greatly in their structure,
+underlying data sources and assumptions. Consequently, models often
+produce widely varying projections of the same policy alternative. As
+such, microsimulation models have been subject to criticisms over their
+“black box”-like qualities, and over their tendency to produce
+estimates with unin to no accompanying sense of uncertainty or
+sensitivity to alternative parameter values and assumptions.
 
 ![](./figures/01_model-diagrams_simple-model.png)
 
-![](./figures/01_model-diagrams_markov-model.png)
+# Health Reform Modeling as a Discrete Time Markov Process
+
+In this section, I will outline a simple discrete time markov model to
+summarize changes in health insurance in the U.S. population. We begin
+by defining an ex ante occupancy vector \(\mathbf{p_{exa}}\), which
+summarizes the fraction of the population in each major health insurance
+type (employer-sponsored insurance, other private insurance, public
+insurance, and uninsured)
+(\(p_{exa,esi} = Pr(I_{exa,k} = \texttt{esi})\))
+
+\[
+\mathbf{p_{exa}}=
+\left(
+\begin{array}{c}
+p_{exa,esi}\\
+p_{exa,pri}\\
+p_{exa,pub}\\
+p_{exa,unin}
+\end{array}
+\right) 
+\] where \(p_{exa,k}\) is the fraction of the population in each
+insurance category \(k\) in the ex ante period.
+
+Now define the transition probability matrix:
+
+\[
+\mathbf{R} =  [r_{k,j}] =   
+\begin{pmatrix}
+      r_{esi,esi} & r_{esi,pri} & r_{esi,pub} & r_{esi,unin}  \\
+       r_{pri,esi} & r_{pri,pri} & r_{pri,pub} & r_{pri,unin}  \\
+        r_{pub,esi} & r_{pub,pri} & r_{pub,pub} & r_{pub,unin}  \\
+         r_{unin,esi} & r_{unin,pri} & r_{unin,pub} & r_{unin,unin}  
+    \end{pmatrix}
+\] where \(r_{k,j}\) is the probability of transitioning from ex ante
+category \(k\) to ex post category \(j\).
+
+Finally, we can define an ex post occupancy vector as follows:
+
+\[
+\mathbf{p_{exp}}=
+\left(
+\begin{array}{c}
+p_{exp,esi}\\
+p_{exp,pri}\\
+p_{exp,pub}\\
+p_{exp,unin}
+\end{array}
+\right) 
+\]
+
+Basic matrix algebra links the two occupancy vectors as follows:
+
+\[
+\begin{aligned}
+    \begin{pmatrix}
+p_{exa,esi}\\
+p_{exa,pri}\\
+p_{exa,pub}\\
+p_{exa,unin} \\
+    \end{pmatrix}'
+        \cdot
+    \begin{pmatrix}
+      r_{esi,esi} & r_{esi,pri} & r_{esi,pub} & r_{esi,unin}  \\
+       r_{pri,esi} & r_{pri,pri} & r_{pri,pub} & r_{pri,unin}  \\
+        r_{pub,esi} & r_{pub,pri} & r_{pub,pub} & r_{pub,unin}  \\
+         r_{unin,esi} & r_{unin,pri} & r_{unin,pub} & r_{unin,unin} 
+    \end{pmatrix}
+    &=&
+    \begin{pmatrix}
+p_{exp,esi}\\
+p_{exp,pri}\\
+p_{exp,pub}\\
+p_{exp,unin} \\
+    \end{pmatrix}^T
+  \end{aligned}
+\]
+
+In the equation above, the set of transition probabilities \(r_{k,j}\)
+can be considered sufficient statistics for evaluating the impact of a
+policy change on health insurance coverage in the population.

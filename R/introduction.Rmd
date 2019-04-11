@@ -1,0 +1,65 @@
+Models projecting the impact of reforms to health insurance programs and markets play an important role in shaping United States health policy. In 2017, for example, Congressional attempts to repeal and replace the 2010 Affordable Care Act (ACA) collapsed, in part, under public outcry after the Congressional Budget Office (CBO) [projected](https://www.nytimes.com/2017/05/24/us/politics/cbo-congressional-budget-office-health-care.html) that upwards of 23 million people would become uninsured. The twists and turns of earlier debates over the ACA--and before it, [the Clinton health plan](figures/01_nyt-clinton-cbo.png)--also were shaped by modelers' assessments of how reform would impact insurance coverage, premiums, health care spending, and government costs.  
+
+Microsimulation models used by the CBO and by others to produce these assessments utilize parameters derived from economic theory and from a large and growing literature evaluating prior state and federal health reforms.  Yet while major models draw from this common literature, they often vary in their underlying data sources, structure, and assumptions.  Consequently, models often produce varying estimates of the same policy option--.  As such, microsimulation models have been subject to criticisms over their "black box"-like qualities, and over their tendency to produce estimates with little to no accompanying sense of uncertainty or sensitivity to alternative parameter values and assumptions.
+
+<!-- This current state of affairs is often attributed to the high costs of developing and maintaining a microsimulation model and to the unwillingness of policymakers to consider a range of plausible outcomes given that uncertainty. Moreover, modelers have traditionally shied away from making normative assessments of the overall welfare impacts of policy alternatives. Consequently, existing models produce an array of point estimates on welfare-relevant outcomes (coverage, premiums, spending and government costs) and leave it to policymakers to weigh those factors when considering policy alternatvies.  -->
+
+<!-- This approach has a number of important shortcomings. First, despite modelers' attempts to caveat the high degree of uncertainty in their estimates, projections are afforded a false sense of precision in high-stakes policy debates. Second, the "black box" like quality of most models makes it difficult for researchers without intimate knowledge of the underlying models to know whether and how their work could inform modeling efforts. Third,  -->
+
+
+<!-- The lack of consideration of parameter sensitivity and uncertainty muddles the ability of researchers to refine the scope and direction of research to improve  -->
+
+<!-- This paper develops a framework for ex ante policy modeling that addresses each of these shortcomings. First, I outline a generalized framework for modeling health reform alternatives that echoes the "sufficient statistics" approach to welfare evaluation developed in the economics literature. I demonstrate that this framework can not only encompass many existing approaches to microsimulation, but also lends itself to powerful counterfactual policy evaluations based simply on reduced form, population-level estimates--that is, without the need to develop and maintain complex underlying microsimulation models. Second, based on this framework I evaluate -->
+
+
+<!-- The net result of the above .... But it does not need to be this way. In this paper, I show that existing approaches to microsimulation, as well as many of the quantities of interest from research, fall under a simple "sufficient statistics" approach to modeling health reform alternatives. This framework both provides a simple and intuitive platform to quickly model the impact of reform alternatives. Couple the use of a single welfare-relevant metric wtih value of information methods to quantify the opportunity cost of uncertainty in modeled outcomes. Can be used to guide decisionmaking under uncertainty, and be used to set a clearer course for future research on quantities and estimates most likely to improve our ability to make informed decisions over altnerative reform priorities.  -->
+
+
+<!-- This framework both unifies many existing approaches to individual-level microsimulation under a single umbrella  -->
+
+
+<!-- paof the current state of microsimulation modeling has also erected substantial time and cost barriers for anyone interested understanding, let alone constructing,  --> 
+
+
+<!-- With few exceptions, research efforts to inform theese policy debates, too, often focus on producing reduced form estimates of the impacts of policy changes on welfare-relevant outcomes--but with no strong underlying sense of whether these efforts are in service of richer understanding of parameters with the strongest influence  -->
+
+<!-- reduced form estimates of welfare-relevant outcomes--but with no strong underlying sense of whether these efforts are in service of reducing uncertainty around parameters  -->
+
+
+
+
+
+<!-- researchers have  -- but those pursuits have been scattershot, with no strong underlying sense of whether these estimates will inform  -->
+
+
+<!-- in service of   -->
+
+<!-- Parameter estimates drawn from the literature, moreover, are uncertain.  -->
+
+
+
+
+<!-- Moreover, the modeling process is often so opaque that researchers must invest considerable time and effort to understand the mechanics of specific models.  -->
+
+<!-- unless one invests considerable time and effort to understand the mechanics of specific models,  -->
+
+<!-- and to the often reactive  -->
+<!-- and backwards-looking process of modeling reform alternatives. That is, a policy change is proposed, and then modelers look towards incorporating the best available evidence to inform their projection of how that policy change will impact relevant outcomes. When the relevant evidence does not exist, modelers must turn to informed assumptions based on economic theory,  -->
+
+<!-- There is no reason, in principle, that things be this way.  -->
+
+
+
+<!-- While there has been considerable effort to produce reduced-form estimates on individual parameters, until recently there has been little microsimulation attention paid to overall welfare impacts of specific policies. This is a significant shortcoming because such an approach can both guide policy decisions and be used to prioritize areas of modeling uncertainty that could be informed by better focusing the direction of future research.  -->
+
+
+
+
+
+
+
+
+
+<!-- The objective of this paper is to present a simplified "sufficient statistics" modeling approach for U.S. health care markets. This approach unites both traditional microsimulation approaches to modeling counterfactual policy changes with  -->
+
+<!-- Models projecting the impact of reforms to health insurance  markets have played an outsized role in shaping both the politics and policy of health care in the United States over the last 30 years.  -->
