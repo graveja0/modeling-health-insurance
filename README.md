@@ -28,10 +28,10 @@ evaluating past state and federal reform efforts. Yet while modelers
 derive many inputs from this shared evidence base, the evidence is
 uncertain & not in uniform agreement. Moreover, models also differ in
 their structure, underlying data sources and assumptions. Not
-surprisingly, these models often produce widely varying projections of
-the same policy alternative.
+surprisingly, models often produce widely varying projections of the
+same policy alternative.
 
-This current state of affairs has subjected microsimulation modeling of
+This current state of affairs has subjected microsimulation models of
 U.S. health policy to criticism over their “black box” like qualities,
 and over their tendency to produce estimates with little to no
 accompanying sense of uncertainty or sensitivity to alternative
@@ -47,9 +47,8 @@ This approach has a number of important shortcomings. First, despite
 modelers’ attempts to caveat the high degree of uncertainty in their
 estimates, projections are afforded a false sense of precision in
 high-stakes policy debates. Second, the “black box” like quality of most
-models makes it difficult for researchers without intimate knowledge of
-the underlying models to know whether and how their work could inform
-modeling efforts. …
+models makes it difficult for researchers to know whether and how their
+work informs modeling efforts. …
 
 This project develops an approach to ex ante policy evaluation that
 addresses many of these shortcomings. First, I outline a generalized
