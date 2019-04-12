@@ -31,24 +31,25 @@ their structure, underlying data sources and assumptions. Not
 surprisingly, models often produce widely varying projections of the
 same policy alternative.
 
-This current state of affairs has subjected microsimulation models of
-U.S. health policy to criticism over their “black box” like qualities,
-and over their tendency to produce estimates with little to no
-accompanying sense of uncertainty or sensitivity to alternative
-parameter values and assumptions. Moreover, modelers have understandably
-but unfortunately shied away from producing normative assessments of the
-overall welfare impacts of policy alternatives. As a consequence,
-existing models produce an array of intermediary point estimates on
-welfare-relevant outcomes (changes in coverage, premiums, spending and
-government costs) and leave it to policymakers to weigh those factors
-when considering policy alternatvies.
+This current state of affairs has subjected microsimulation models to
+criticism over their “black box” like qualities, and over their tendency
+to produce estimates with a limited accompanying sense of uncertainty or
+sensitivity to alternative parameter values and assumptions. Moreover,
+modelers have understandably but unfortunately shied away from producing
+normative assessments of the overall welfare impacts of policy
+alternatives. As a consequence, existing models produce an array of
+intermediary point estimates on welfare-relevant outcomes (changes in
+coverage, premiums, spending and government costs) and leave it to
+policymakers to weigh those factors when considering policy
+alternatvies.
 
 This approach has a number of important shortcomings. First, despite
 modelers’ attempts to caveat the high degree of uncertainty in their
 estimates, projections are afforded a false sense of precision in
 high-stakes policy debates. Second, the “black box” like quality of most
 models makes it difficult for researchers to know whether and how their
-work informs modeling efforts. …
+work can inform modeling efforts. This leaves a muddled sense of how
+future research could be directed and refined to optimize impact.
 
 This project develops an approach to ex ante policy evaluation that
 addresses many of these shortcomings. First, I outline a generalized
