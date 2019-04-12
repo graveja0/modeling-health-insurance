@@ -6,6 +6,20 @@
 ##############################
 ##############################
 
+create_if_missing <- function(x,var,numeric = FALSE) {
+  vv <- enquo(var)
+  if (!(quo_name(vv) %in% colnames(x)) & numeric) {
+    x %>% mutate(test = "") %>% 
+      rename( !!vv := test)
+  } else if (!(quo_name(vv) %in% colnames(x)) & !(numeric))  {
+    x %>% mutate(test = NA) %>% 
+      rename( !!vv := test)
+  } else {
+    x
+  }
+}
+
+
 #devtools::install_github("ajdamico/lodown")
 # install.packages( "srvyr" , repos = "http://cran.rstudio.com/" )
 library(lodown)
@@ -17,7 +31,7 @@ library(tidyverse)
 #   get_catalog( "meps" ,
 #                output_dir = file.path( "./input/meps/" ))
 # # 2014-2016 only
-# meps_cat <- subset( meps_cat , year %in%  2014:2016 )
+# meps_cat <- subset( meps_cat , year %in%  2013:2013 )
 # # download the microdata to local computer
 # meps_cat <- lodown( "meps" , meps_cat )
 
@@ -27,9 +41,15 @@ df_meps <-
     read_rds(paste0("./input/meps/", .x)) %>%
       tbl_df() %>% 
       janitor::clean_names() %>%
-      mutate(file = .x)  #%>% 
+      mutate(file = .x)  %>% 
+      rename_at(vars(starts_with("perwt")),function(x) "perwt")#%>% 
     # filter(row_number() %in% sample(1:nrow(.),100))
   ))
+
+# foo %>% 
+#   filter(row_number() %in% 1:10) %>% 
+#   select(dupersid, panel, age31x, sex, racethx,starts_with("perwt")) %>% 
+
 
 month_lut <- 
   c("ja" = 1,
@@ -45,18 +65,18 @@ month_lut <-
     "no" = 11,
     "de" = 12)
 
-key_vars <- c("dupersid","panel","age31x","region31","sex","racethx")
+key_vars <- c("dupersid","panel","age31x","region31","sex","racethx","perwt")
 key_vars2 <- gsub("31|31x","",key_vars)
 df_meps_long <- 
   df_meps %>% 
   map(~(.x %>% 
-          select(key_vars,matches("^tri|^mcr|^mcd|^pub|^ins|^opa|^opb|^sta|^peg|^pdk|^png|^pog|^prs|^pou|^prx|^pri|^hpe|^hpd|^hpn|^hpo|^hps|^hpx|^hpr")) %>% 
+          select(key_vars,matches("^perwt|^tri|^mcr|^mcd|^pub|^ins|^opa|^opb|^sta|^peg|^pdk|^png|^pog|^prs|^pou|^prx|^pri|^hpe|^hpd|^hpn|^hpo|^hps|^hpx|^hpr")) %>% 
           mutate(region = region31,
                  age = age31x) %>% 
           select(-contains("inscop"),-contains("insc"),-matches("42$|53$|31$")) %>% 
           select(key_vars2,matches("ja[1-9]|fe[1-9]|ma[1-9]|ap[1-9]|my[1-9]|ju[1-9]|jl[1-9]|au[1-9]|se[1-9]|oc[1-9]|no[1-9]|de[1-9]"))  %>% 
           gather(key,value,-key_vars2) %>% 
-          mutate(key = str_remove(key,"14|15|16")) %>% 
+          mutate(key = str_remove(key,"13|14|15|16")) %>% 
           mutate(month = ifelse(grepl("x$",key),str_sub(key,-3,-2),str_sub(key,-2,-1))) %>% 
           mutate(type = ifelse(grepl("x$",key), 
                                str_replace(key,"jax$|fex$|max$|apx$|myx$|jux$|jlx$|aux$|sex$|ocx$|nox$|dex$","x"),
@@ -67,6 +87,11 @@ df_meps_long <-
           arrange(dupersid,month) %>% 
           mutate(value = ifelse(value==2,0,value)) %>% 
           spread(type,value) %>% 
+          create_if_missing(hpe) %>% 
+          create_if_missing(hpo) %>% 
+          create_if_missing(hpd) %>% 
+          create_if_missing(hps) %>% 
+          create_if_missing(prx) %>% 
           mutate(insurance = case_when(
             hpe==1 | hpo==1 | hpd==1 | hps==1 ~ 1,
             peg==1 | pog==1  | pou ==1 | pdk==1  ~2 ,
@@ -84,7 +109,7 @@ df_meps_long <-
   bind_rows() %>% 
   arrange(dupersid,month) 
 
-write_rds(df_meps_long,path="./input/meps/df-meps-long-2014-to-2016.rds")
+write_rds(df_meps_long,path="./input/meps/df-meps-long-2013-to-2016.rds")
 df_meps_long %>% filter(dupersid =="60001101") %>% data.frame()
 # gen hicov = .
 # replace hicov = 5 if ins==2

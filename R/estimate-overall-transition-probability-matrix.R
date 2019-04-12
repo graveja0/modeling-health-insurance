@@ -121,8 +121,10 @@ trans_probs_gom %>%
   write_rds(here("output/ex-ante-overall-population/transition-probabilities-gompertz.rds"))
 
 
-
+###########
 ### MEPS
+###########
+
 
 insurance_full_lut <- 
   c("Public" = "public",
@@ -131,35 +133,66 @@ insurance_full_lut <-
     "Non-Group" = "nongrp",
     "Uninsured" = "uninsured")
 
-df_meps <-
-  read_rds("./input/meps/df-meps-long-2014-to-2016.rds") %>% 
-  filter(panel==19) %>% 
+df_meps_full <-
+  read_rds("./input/meps/df-meps-long-2013-to-2016.rds") 
+
+df_meps_w <- 
+  df_meps_full %>% 
+  mutate(idnumber = dupersid) %>% 
+  group_by(idnumber) %>% 
+  filter(month==1 & panel == 18) %>% 
+  select(idnumber,weight = perwt) %>% 
+  mutate(weight = 2 * weight) %>% 
+  ungroup() 
+
+df_meps <- 
+  df_meps_full %>% 
+  filter(panel==18) %>% 
   mutate(insurance = insurance_full_lut[paste0(insurance)]) %>% 
   group_by(dupersid) %>% 
   mutate(age = min(age)) %>% 
   mutate(tx = as.integer(region==3)) %>% 
-  select(dupersid,tx,age,month,insurance) %>% 
+  select(idnumber = dupersid,tx,age,sex,month,insurance,race = racethx) %>% 
   rename(insurance_full = insurance) %>% 
   mutate(insurance = forcats::fct_collapse(insurance_full,
                                            esi = c("esidep","esiown"), 
                                            private = c("nongrp"),
                                            public = c("public"), 
                                            uninsured = c("uninsured"))) %>% 
-  mutate(insurance  = ifelse(insurance == "esi","01_esi", 
+  mutate(insurance_type  = ifelse(insurance == "esi","01_esi", 
                              ifelse(insurance == "private","02_priv_oth",
                                     ifelse(insurance == "public","03_public",
-                                           ifelse(insurance=="uninsured","04_uninsured","")))))
+                                           ifelse(insurance=="uninsured","04_uninsured",""))))) %>% 
+  filter(age < 65 & age > 18) %>% 
+  mutate(insurance_type = factor(insurance_type)) %>% 
+  select(idnumber,month,insurance_type, sex, race)  %>% 
+  ungroup()  %>% 
+  left_join(df_meps_w,"idnumber") 
+
+ex_ante_meps <- 
+  df_meps %>% 
+  filter(month==1 & !is.na(insurance_type)) %>% 
+  group_by(insurance_type) %>% 
+  summarise(n = sum(weight,na.rm=TRUE)) %>% 
+  ungroup() %>% 
+  mutate(pct = n/sum(n)) 
+
+ex_ante_meps %>%  
+  write_rds(here("output/ex-ante-overall-population/ex-ante-distribution-meps.rds"))
+
+# Set Up the Multi-State Data
 
 ls_ms_meps <- 
   df_meps %>% 
-  select(-insurance_full) %>% 
-  prepare_multistate_data(idvar = dupersid,
+  mutate(insurance_type = paste0(insurance_type)) %>% 
+  mutate(constant = 1) %>% 
+  prepare_multistate_data(idvar = idnumber,
                           timevar = month, 
-                          statevar = insurance) 
+                          statevar = insurance_type) 
 
 categories <- names(ls_ms_meps$trans_mat)
+categories <- categories[-grep("NA",categories)]
 
-# Fit the transition models. 
 fit_transition_meps <- map(categories,
                       ~ (
                         fit_multistate_model(
@@ -167,10 +200,30 @@ fit_transition_meps <- map(categories,
                           tmat = ls_ms_meps$trans_mat %>% pluck(.x),
                           fit_type = "kaplan-meier",
                           ff = Surv(Tstart, Tstop, status) ~ 1,
-                          idvar = dupersid,
-                          prediction_vals = data.frame(constant = c(1))
+                          idvar = idnumber,
+                          prediction_vals = data.frame(constant = 1)
                         ) 
                       )) %>% 
   set_names(categories)
 
+trans_probs_meps <- map_df(categories,
+                      ~(
+                        get_cumHaz(dist = fit_transition_meps[[1]]$fit_type ,
+                                   ls_fit = fit_transition_meps %>% pluck(.x), 
+                                   tt = 1:24,
+                                   lut = fit_transition_meps %>% 
+                                     pluck(.x) %>% pluck("lut"))  %>% 
+                          mssample(Haz=.,trans=ls_ms_meps$trans_mat %>% 
+                                     pluck(.x),tvec=unique(.$time),clock="reset", M=1000) %>% 
+                          magrittr::set_names(c("time",.x,fit_transition_meps %>% pluck(.x) %>% 
+                                                  pluck("lut") %>% pull(transition_type))) %>% 
+                          mutate(baseline = .x)
+                      )) %>% 
+  arrange(time,baseline) %>% 
+  select_at(c("time","baseline",categories)) %>% 
+  group_by(time) %>% 
+  nest()
+
+trans_probs_meps %>% 
+  write_rds(here("output/ex-ante-overall-population/transition-probabilities-kaplan-meier-meps.rds"))
 
