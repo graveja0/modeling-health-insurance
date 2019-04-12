@@ -2,3 +2,9 @@
 .Rhistory
 .RData
 .Ruserdata
+R/replicate-finkelstein*
+ignore/
+input/
+data/
+reference/
+*cache*

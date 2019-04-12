@@ -4,7 +4,7 @@ Microsimulation models used by the CBO and by others to produce these assessment
 
 <!-- This current state of affairs is often attributed to the high costs of developing and maintaining a microsimulation model and to the unwillingness of policymakers to consider a range of plausible outcomes given that uncertainty. Moreover, modelers have traditionally shied away from making normative assessments of the overall welfare impacts of policy alternatives. Consequently, existing models produce an array of point estimates on welfare-relevant outcomes (coverage, premiums, spending and government costs) and leave it to policymakers to weigh those factors when considering policy alternatvies.  -->
 
-<!-- This approach has a number of important shortcomings. First, despite modelers' attempts to caveat the high degree of uncertainty in their estimates, projections are afforded a false sense of precision in high-stakes policy debates. Second, the "black box" like quality of most models makes it difficult for researchers without intimate knowledge of the underlying models to know whether and how their work could inform modeling efforts. Third,  -->
+<!--   -->
 
 
 <!-- The lack of consideration of parameter sensitivity and uncertainty muddles the ability of researchers to refine the scope and direction of research to improve  -->
