@@ -25,8 +25,9 @@ health care spending, and government costs.
 Microsimulation models used by the CBO and by others to produce these
 estimates draw on economic theory and on a large and growing literature
 evaluating past state and federal reform efforts. Yet while modelers
-derive many model inputs from this shared evidence base, models differ
-greatly in their structure, underlying data sources and assumptions. Not
+derive many inputs from this shared evidence base, the evidence is
+uncertain & not in uniform agreement. Moreover, models also differ in
+their structure, underlying data sources and assumptions. Not
 surprisingly, these models often produce widely varying projections of
 the same policy alternative.
 
