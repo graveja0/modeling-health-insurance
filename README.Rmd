@@ -42,14 +42,7 @@ This current state of affairs has subjected microsimulation models of U.S. healt
 
 This approach has a number of important shortcomings. First, despite modelers' attempts to caveat the high degree of uncertainty in their estimates, projections are afforded a false sense of precision in high-stakes policy debates. Second, the "black box" like quality of most models makes it difficult for researchers  to know whether and how their work informs modeling efforts. ...
 
-This project develops an approach to ex ante policy evaluation that addresses many of these shortcomings. First, I outline a generalized framework for modeling health reform alternatives. This framework is simple yet powerful and has roots in health economic modeling techniques often used for health technology assessments, and in the "sufficient statistics" approach to welfare evaluation. 
-I demonstrate that this framework can not only encompass many existing approaches to microsimulation, but also lends itself to powerful counterfactual policy evaluations based simply on reduced form estimates (i.e., without the need for detailed individual-level microsimulation). Second, within this framework I tie together two imoportant but diverse approaches to assessing the welfare impacts of policy. 
-
-
-
-
-
-<!-- Microsimulation models have been subject to criticisms over their "black box"-like qualities, and over their tendency to produce estimates with unin to no accompanying sense of uncertainty or sensitivity to alternative parameter values and assumptions.  -->
+This project develops an approach to ex ante policy evaluation that addresses many of these shortcomings. First, I outline a generalized framework for modeling health reform alternatives. This framework is simple yet powerful and has roots in health economic modeling techniques often used for health technology assessments, and in the "sufficient statistics" approach to welfare evaluation. I demonstrate that this framework can not only encompass many existing approaches to microsimulation, but also lends itself to powerful counterfactual policy evaluations based simply on reduced form estimates (i.e., without the need for detailed individual-level microsimulation). Second, within this framework I tie together two imoportant but diverse approaches to assessing the welfare impacts of policy. 
 
 ![](./figures/01_model-diagrams_simple-model.png)
 

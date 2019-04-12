@@ -61,10 +61,7 @@ microsimulation, but also lends itself to powerful counterfactual policy
 evaluations based simply on reduced form estimates (i.e., without the
 need for detailed individual-level microsimulation). Second, within this
 framework I tie together two imoportant but diverse approaches to
-assessing the welfare impacts of
-policy.
-
-<!-- Microsimulation models have been subject to criticisms over their "black box"-like qualities, and over their tendency to produce estimates with unin to no accompanying sense of uncertainty or sensitivity to alternative parameter values and assumptions.  -->
+assessing the welfare impacts of policy.
 
 ![](./figures/01_model-diagrams_simple-model.png)
 
