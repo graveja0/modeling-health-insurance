@@ -2,8 +2,6 @@ A Sufficient Statistics Approach to Ex Ante Health Policy Evaluation
 ================
 John A. Graves
 
-# Introduction
-
 Models projecting the impact of reforms to health insurance programs and
 markets play an important role in shaping U.S. health policy. In 2017,
 for example, Congressional attempts to repeal and replace the 2010
@@ -98,9 +96,7 @@ guidepost for priortizing and refining future research. The value of
 information on individual parameters in a model can be estimated, and
 these
 
-As an example, I apply VOI methos to reduced form evidence on teh MVPF
-willingness to pay (WTP) for subsidized health insurance, which
-i
+<!-- As an example, I  apply VOI methos to reduced form evidence on the MVPF  willingness to pay (WTP) for subsidized health insurance, which i -->
 
 <!-- I show how VOI methods can fileter uncertainty in RD paramters from Finkelstein , as well as assumptions  -->
 

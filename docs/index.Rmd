@@ -1,0 +1,7 @@
+---
+title: "A Sufficient Statistics Approach to Ex Ante Health Policy Evaluation"
+author: "John A. Graves"
+output: github_document
+---
+
+Test.
