@@ -1,0 +1,25 @@
+---
+title: "A Sufficient Statistics Approach to Ex Ante Health Policy Evaluation"
+author: "John A. Graves, Ph.D."
+date: "4/17/2019"
+output: pdf_document
+header-includes:
+    - \usepackage{setspace}\doublespacing
+urlcolor: blue   
+abstract: This is the abstract.
+---
+
+\centering
+\raggedright
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r,child="../R/introduction.Rmd"}
+```
+
+```{r, child = "./general-modeling-framework.Rmd"}
+```
+

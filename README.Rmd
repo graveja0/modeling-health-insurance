@@ -40,122 +40,48 @@ insurance_sipp_lut <- c(
 <!-- That is, VOI methdos can be used to quantify the opportunity cost of a "wrong" decision. In that way, we can identify and prioritize research and modeling efforts on the parameters and/or assumptions that drive uncertainty. To demonstrate the power of VOI -->
 
 
-![](./figures/01_model-diagrams_simple-model.png)
 
-# Health Reform Modeling as a Discrete Time Markov Process
+<!-- ### Estimating the Transition Probability Matrix -->
 
-This section outlines a simple discrete time markov model for health insurance coverage in the U.S. population. We begin by defining an ex ante occupancy vector $\mathbf{p_{exa}}$ that summarizes the fraction of the population in each major health insurance type (employer-sponsored insurance, other private insurance, public insurance, and uninsured) in the pre-reform period.
+<!-- We first obtain a simple cross tabulation of insurance coverage in January 2013 from the SIPP.  -->
 
-\[
-\mathbf{p_{exa}}=
-\left(
-\begin{array}{c}
-p_{exa,esi}\\
-p_{exa,pri}\\
-p_{exa,pub}\\
-p_{exa,unin}
-\end{array}
-\right) 
-\]
-where $p_{exa,k}$ is the fraction of the population in each insurance category $k$ in the ex ante period.
+<!-- ```{r, echo = FALSE} -->
+<!-- # source(here("R/estimate-overall-transition-probability-matrix.R")) -->
+<!-- ex_ante <-  -->
+<!--   read_rds(here("output/ex-ante-overall-population/ex-ante-distribution.rds")) -->
+<!-- ex_ante_meps <-  -->
+<!--   read_rds(here("output/ex-ante-overall-population/ex-ante-distribution-meps.rds")) -->
 
-Now define the transition probability matrix:
+<!-- ex_ante %>%  -->
+<!--   mutate(n = round(n/1e6,1)) %>%  -->
+<!--   mutate(pct = round(100*pct,1)) %>%  -->
+<!--   mutate(insurance_type = c("ESI","Private-Other","Public","Uninsured")) %>%  -->
+<!--   cbind( -->
+<!--     ex_ante_meps %>%  -->
+<!--     mutate(n = round(n/1e6,1)) %>%  -->
+<!--     mutate(pct = round(100*pct,1)) %>%  -->
+<!--     select(-insurance_type)  -->
+<!--   ) %>%  -->
+<!--   knitr::kable(caption = "Ex Ante Distribution of Insurance Coverage, January 2013",col.names= c("Category","SIPP: Number (millions)","SIPP: Percent", "MEPS: Number (millions)","MEPS: Percent"), format = "html") -->
+<!-- ``` -->
 
-\[
-\mathbf{R} =  [r_{k,j}] =   
-\begin{pmatrix}
-      r_{esi,esi} & r_{esi,pri} & r_{esi,pub} & r_{esi,unin}  \\
-       r_{pri,esi} & r_{pri,pri} & r_{pri,pub} & r_{pri,unin}  \\
-        r_{pub,esi} & r_{pub,pri} & r_{pub,pub} & r_{pub,unin}  \\
-         r_{unin,esi} & r_{unin,pri} & r_{unin,pub} & r_{unin,unin}  
-    \end{pmatrix}
-\]
-where $r_{k,j}$ is the probability of transitioning from ex ante category $k$ to ex post category $j$.
+<!-- Next we fit nonpaarametric (Kaplan-Meier) and parametric multi-state models to obtain the transition probabilities by December 2013.  -->
 
-Finally, we can define an ex post occupancy vector:
+<!-- ```{r} -->
+<!-- trans_probs <-  -->
+<!--     read_rds(here("output/ex-ante-overall-population/transition-probabilities-kaplan-meier.rds")) -->
 
-\[
-\mathbf{p_{exp}}=
-\left(
-\begin{array}{c}
-p_{exp,esi}\\
-p_{exp,pri}\\
-p_{exp,pub}\\
-p_{exp,unin}
-\end{array}
-\right) 
-\]
+<!-- trans_probs %>% filter(time==24) %>% pluck("data") %>% pluck(1) %>%  -->
+<!--   mutate_at(vars(-1),function(x) round(100*x,2)) %>%  -->
+<!--   knitr::kable(caption = "Transition Probabilities", format = "html") -->
+<!-- ``` -->
 
-Basic matrix algebra links the two occupancy vectors as follows: 
+<!-- ```{r} -->
+<!--  trans_probs_meps <-  -->
+<!--     read_rds(here("output/ex-ante-overall-population/transition-probabilities-kaplan-meier-meps.rds")) -->
 
-\[
-\begin{aligned}
-    \begin{pmatrix}
-p_{exa,esi}\\
-p_{exa,pri}\\
-p_{exa,pub}\\
-p_{exa,unin} \\
-    \end{pmatrix}'
-        \cdot
-    \begin{pmatrix}
-      r_{esi,esi} & r_{esi,pri} & r_{esi,pub} & r_{esi,unin}  \\
-       r_{pri,esi} & r_{pri,pri} & r_{pri,pub} & r_{pri,unin}  \\
-        r_{pub,esi} & r_{pub,pri} & r_{pub,pub} & r_{pub,unin}  \\
-         r_{unin,esi} & r_{unin,pri} & r_{unin,pub} & r_{unin,unin} 
-    \end{pmatrix}
-    &=&
-    \begin{pmatrix}
-p_{exp,esi}\\
-p_{exp,pri}\\
-p_{exp,pub}\\
-p_{exp,unin} \\
-    \end{pmatrix}'
-  \end{aligned}
-\]
-
-In the equation above, the set of transition probabilities $r_{k,j}$ can be considered sufficient statistics for evaluating the impact of a policy change on health insurance coverage in the population. That is, once we know these probabilities and how they change under a given reform option, we can simulate the impact on the overall coverage distribution in the population. By attaching costs to population movements among insurance types, we can simulate the cost impact to the government. And finally, as we show below, social welfare weights can also be attached to population movements. These weights can then be aggregated and compared across reform alternatives to make comparative evaluations of policy options. 
-
-### Estimating the Transition Probability Matrix
-
-We first obtain a simple cross tabulation of insurance coverage in January 2013 from the SIPP. 
-
-```{r, echo = FALSE}
-# source(here("R/estimate-overall-transition-probability-matrix.R"))
-ex_ante <- 
-  read_rds(here("output/ex-ante-overall-population/ex-ante-distribution.rds"))
-ex_ante_meps <- 
-  read_rds(here("output/ex-ante-overall-population/ex-ante-distribution-meps.rds"))
-
-ex_ante %>% 
-  mutate(n = round(n/1e6,1)) %>% 
-  mutate(pct = round(100*pct,1)) %>% 
-  mutate(insurance_type = c("ESI","Private-Other","Public","Uninsured")) %>% 
-  cbind(
-    ex_ante_meps %>% 
-    mutate(n = round(n/1e6,1)) %>% 
-    mutate(pct = round(100*pct,1)) %>% 
-    select(-insurance_type) 
-  ) %>% 
-  knitr::kable(caption = "Ex Ante Distribution of Insurance Coverage, January 2013",col.names= c("Category","SIPP: Number (millions)","SIPP: Percent", "MEPS: Number (millions)","MEPS: Percent"), format = "html")
-```
-
-Next we fit nonpaarametric (Kaplan-Meier) and parametric multi-state models to obtain the transition probabilities by December 2013. 
-
-```{r}
-trans_probs <- 
-    read_rds(here("output/ex-ante-overall-population/transition-probabilities-kaplan-meier.rds"))
-
-trans_probs %>% filter(time==24) %>% pluck("data") %>% pluck(1) %>% 
-  mutate_at(vars(-1),function(x) round(100*x,2)) %>% 
-  knitr::kable(caption = "Transition Probabilities", format = "html")
-```
-
-```{r}
- trans_probs_meps <- 
-    read_rds(here("output/ex-ante-overall-population/transition-probabilities-kaplan-meier-meps.rds"))
-
-trans_probs_meps %>% filter(time==24) %>% pluck("data") %>% pluck(1) %>% 
-  mutate_at(vars(-1),function(x) round(100*x,2)) %>% 
-  knitr::kable(caption = "Transition Probabilities", format = "html")
-```
+<!-- trans_probs_meps %>% filter(time==24) %>% pluck("data") %>% pluck(1) %>%  -->
+<!--   mutate_at(vars(-1),function(x) round(100*x,2)) %>%  -->
+<!--   knitr::kable(caption = "Transition Probabilities", format = "html") -->
+<!-- ``` -->
 
