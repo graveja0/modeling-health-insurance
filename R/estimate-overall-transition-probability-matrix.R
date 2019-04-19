@@ -1,10 +1,11 @@
+source(here::here("R/manifest.R"))
 
 create_sipp_data = FALSE
 if (create_sipp_data) source(here("R/read-and-tidy-SIPP-data.R"))
 
 df_sipp_full <- read_rds(here("input/sipp/01_sipp-tidy_v1-0.rds"))
 
-# Survey weight (use value from first month)
+# Get survey weight (use value from first month)
 df_w <- 
   df_sipp_full %>% 
   mutate(idnumber = id) %>% 
@@ -16,7 +17,7 @@ df_w <-
   ungroup() 
 
 df_sipp <- 
-  df_sipp_full %>% 
+  df_sipp_full %>%    
   filter(age < 65 & age > 18) %>% 
   mutate(year = ifelse(swave ==1 , 2014, 2015)) %>% 
   mutate(month = ifelse(swave ==1 , monthcode, monthcode+12)) %>% 
