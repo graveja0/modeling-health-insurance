@@ -1,4 +1,61 @@
+<!-- https://www.microsimulation.org/IJM/V6_3/5_IJM_6_3_2013_Cordova.pdf # COMPARE EQUATION --> 
+<!-- http://www.cbo.gov/sites/default/files/cbofiles/attachments/45427-AcademyHealth.pdf # FORMER ELASTICITY EQUATION-->
+
 <!-- ![](./figures/01_model-diagrams_simple-model.png) -->
+# Discrete Choice Model
+
+Consider a model of insurance choice among $J$ alternatives (including the choice not to insure). Define $U_{itj}$ as the utility for choice unit $i$ (e.g., individuals or families) from selecting choice $j$ at time $t$. Suppose utility can be expressed in terms of a vector ($\mathbf{x_{itj}}$) of observable attributes  of the choices and the choice units , fixed (over time) attributes of the choice unit ($\mathbf{z_i}$),  and an unobservable component $\epsilon_{itj}$, :
+
+\[
+U_{itj} = V(\mathbf{x_{itj}}, \mathbf{z_i})+ \epsilon_{ij}
+\]
+
+For any unit, the choice of insurance $y_i$ is based on maximizing utility across the $J$ alternatives at time t:
+
+\[
+y_{it} = {\arg \max}_j [U_{itj}, j = 1, \dots, J]
+\]
+
+Following McFadden (1974) we further assume a linear utility specification: 
+
+\[
+U_{itj} = \alpha_j + \mathbf{\beta_j}'\mathbf{x_{itj}} + \mathbf{\gamma'}\mathbf{z_i} + \epsilon_{itj}
+\]
+
+We now define a function $B(\cdot)$ that maps the utility derived from choice $j$ to the probability of selecting $j$. Assuming the error terms $\epsilon_{ij}$ are independent across units and are distributed Type I Extreme Value, the probability that unit $i$ chooses insurance type $k$ at time $t$ is 
+
+\[
+\begin{aligned}
+C_{it}(k) = P[U_{itk}>U_{itj} \forall k \neq j] \\
+= B(\mathbf{x_{itj}}, \mathbf{z_i},\alpha_j \mathbf{\beta_j},\mathbf{\gamma}) \\
+= \frac{\exp(U(\mathbf{x_{itj}}, \mathbf{z_i},\alpha_j \mathbf{\beta_j},\mathbf{\gamma}))}{\sum_{ij}[\exp(U(\mathbf{x_{itj}}, \mathbf{z_i},\alpha_j \mathbf{\beta_j},\mathbf{\gamma}))]}
+\end{aligned}
+\]
+This sets up a standard conditional logit model for insurance choice at time $t$. 
+
+Now need to model the transition probability from time $t$ to $t+1$.
+
+Now suppose we wish to model an exogenous change to the choice set. For example, in ex ante policy evaluation we typically model how a proposed reform alternative changes the characteristics, quality and price of insurance. These changes will affect utility and, in turn, can affect the ultimate choice of insurance covearge $y_{it}$. 
+
+A standard assumption in behavioral microsimulation is that the exogenous change does not affect the unobserved disturbance term $\epsilon_{itj}$. Thus, [differences in predicted utility](https://onlinelibrary.wiley.com/doi/10.1002/jae.755) can be used to derive transition probabilities among the J choices. 
+
+<!-- We define $r_{ikm}$ as the probability of transitioning from choice $k$ to choice $m$.  These transition probabilities can then be summarized in a $J \times J$ transition probability matrix $T_{i}$ -->
+
+
+
+
+
+
+<!-- Bonin and Schneider (2006) derive an analytical representation of $P_i(k|m)$, or the transition probability from the initial state $m$ to an alternative state $k$ for an individual sample unit. The analytic form for these transtion probabilities is given by: -->
+
+<!-- \[ -->
+<!-- \begin{aligned} -->
+<!-- P(k|m) = \bigg ( \sum_j \exp(\hat U_{jm}) \bigg ) \times \sum_{r=1}^{J-1}I(\Delta_{mk} <\Delta_{r-1})\frac{\exp(\hat U_{km})}{\exp(\hat U_{km})+\eta_r} \\  -->
+<!-- \times \bigg( \frac{1}{1+\exp(\Delta_r-\Delta_{mk})(\exp(\hat U_{km}) + \eta_r)} -  -->
+<!-- \frac{1}{1 + \exp(\Delta_{r-1}-\Delta_{mk})(\exp(\hat U_{mk})+\eta_r)+\theta_r}\bigg ) -->
+<!-- \end{aligned} -->
+<!-- \] -->
+
 
 # Health Reform Modeling as a Discrete Time Markov Process
 
@@ -72,3 +129,34 @@ p_{exp,unin} \\
 \]
 
 In the equation above, the set of transition probabilities $r_{k,j}$ can be considered sufficient statistics for evaluating the impact of a policy change on health insurance coverage in the population. That is, once we know these probabilities and how they change under a given reform option, we can simulate the impact on the overall coverage distribution in the population. By attaching costs to population movements among insurance types, we can simulate the cost impact to the government. And finally, as we show below, social welfare weights can also be attached to population movements. These weights can then be aggregated and compared across reform alternatives to make comparative evaluations of policy options. 
+
+
+# Link to Existing Microsimulation Approaches
+
+## Utility Maximization Models
+<!-- https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2965891/ -->
+
+CBO estimates the utility ($U_{in}$) for HIU $i$ from coverage alternative $n$ based on a systematic component ($V_{in}$) and an (unobservable) stochastic component $\epsilon_{in}$:
+
+\[
+U_{in} = \beta_1 V_{in} + \epsilon_{in}
+\]
+
+In the equation above, the systematic component of utility ($V_{in}$) is adjusted upwards of downwards based on a scaling factor $\beta_1$ that translates the utility value HIUs place on a coverage alternative into dollars. 
+
+The systematic component of utility is further modeled using a utility specification. For a single individual this takes the following form:
+
+\[
+V_{in} = y_i - C_{in} - E[H_{in}] - \frac{1}{2}\rho_n\texttt{Var}(H_{in}) + \delta_{1n}(y_i,a_i)
+\]
+where $y_i$ is the individual's income, $a_i$ is the individual's age, $C_{in}$ is the out-of-pocket cost to the individual of coverage alternative $n$ (e.g., premium, any mandate penalty, etc.), $E[H_{in}]$ and $\texttt{Var}(H_{in})$ are the expectation and variance of the individual's out-of-pocket health expenditure on coverage alternaive $n$, $\rho_n$ is the coefficient of absolute risk aversion, and $\delta_{1n}$ is a utility shifter specific to each coverage type $n$. 
+
+The utility shifter in the above equation is designed to either increase or decrease the value of each coverage type--possibly varying by age or income--based on various factors. These factors coudl include the individul's awareness of their eligibility for the program, their ability to  enroll in the program (e.g., through a website, or through a more or less cumbersome enrollment process), their preferences for or against certain types of coverage, etc. In addition, the individual's out-of-pocket spending  ($H_{in}$) varies by insurance type, and is capped (based on income) to reflect the availability of uncompensated care and bankruptcy as implicit sources of insurance. 
+
+Each indiviual in the model faces a set of insurance options in their choice set (e.g., based on whether an offer of emloyment-based coverage is available to them, whether they are eligible for public insurance, etc.). These utilities are then fed through a nested logit framework to derive coverage take-up probabilities. 
+
+
+
+
+
+## Elasticity 

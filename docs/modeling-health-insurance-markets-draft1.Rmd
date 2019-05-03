@@ -1,20 +1,31 @@
 ---
-title: "A Sufficient Statistics Approach to Ex Ante Health Policy Evaluation"
-author: "John A. Graves, Ph.D."
+title: "Ex Ante Health Policy Evaluation: A Sufficient Statistics Approach"
+author: | 
+  | John A. Graves
+  | Vanderbilt University
 date: "4/17/2019"
-output: pdf_document
 header-includes:
     - \usepackage{setspace}\doublespacing
 urlcolor: blue   
-abstract: This is the abstract.
+output: pdf_document
+indent: TRUE
+fontsize: 12pt
 ---
 
-\centering
-\raggedright
-\newpage
+<!-- \centering -->
+<!-- \raggedright -->
+<!-- \newpage -->
+
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	cache = FALSE
+)
+# Load packages and source functions. 
+source(here::here("R/manifest.R"))
 ```
 
 ```{r,child="../R/introduction.Rmd"}
