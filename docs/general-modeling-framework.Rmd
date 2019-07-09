@@ -4,40 +4,152 @@
 <!-- ![](./figures/01_model-diagrams_simple-model.png) -->
 # Discrete Choice Model
 
-Consider a model of insurance choice among $J$ alternatives (including the choice not to insure). Define $U_{itj}$ as the utility for choice unit $i$ (e.g., individuals or families) from selecting choice $j$ at time $t$. Suppose utility can be expressed in terms of a vector ($\mathbf{x_{itj}}$) of observable attributes  of the choices and the choice units , fixed (over time) attributes of the choice unit ($\mathbf{z_i}$),  and an unobservable component $\epsilon_{itj}$, :
+Consider a model of insurance choice among $J$ alternatives (including the choice not to insure). Define $U_{itj}$ as the utility for choice unit $i$ from selecting choice $j$ at time $t$. For our purposes here we define the choice unit as the health insurance eligibilty unit (HIU), or the set of family members who could enroll under the same health insurance plan. 
 
-\[
-U_{itj} = V(\mathbf{x_{itj}}, \mathbf{z_i})+ \epsilon_{ij}
-\]
+Suppose utility can be expressed in terms of a vector ($\mathbf{\tilde x_{itj}}$) of time-varying attributes of the choices and the HIU ($\mathbf{x_{itj}}$), including the history ($\mathcal{F}_{it}$) of the HIU's insurance selections, i.e., $\mathbf{\tilde x_{itj}} = \{ \mathbf{x_{itj}}, \mathcal{F}_{it}\}$. Utility also depends on fixed attributes of the HIU ($\mathbf{z_i}$),  and an unobservable component $\epsilon_{itj}$, :
 
-For any unit, the choice of insurance $y_i$ is based on maximizing utility across the $J$ alternatives at time t:
+\begin{equation}
+\label{eq:utility}
+U_{itj} = V(\mathbf{\tilde x_{itj}}, \mathbf{z_i})+ \epsilon_{ij}
+\end{equation}
+
+For HIU $i$, the choice of insurance $y_{it}$ is based on maximizing utility across the $J$ alternatives at time t:
 
 \[
 y_{it} = {\arg \max}_j [U_{itj}, j = 1, \dots, J]
 \]
+<!-- \autoref{eq:utility} -->
 
-Following McFadden (1974) we further assume a linear utility specification: 
+We next assume a linear utility specification that depends on individual- and choice-specific attributes, the HIU's insurance selection at the previous occasion ($y_{i,t-1}$), and the idiosyncratic term ($\epsilon_{itj}$) : 
 
-\[
-U_{itj} = \alpha_j + \mathbf{\beta_j}'\mathbf{x_{itj}} + \mathbf{\gamma'}\mathbf{z_i} + \epsilon_{itj}
-\]
+\begin{equation}
+\label{eq:utility_linear}
+U_{itj} = \alpha_j + \mathbf{\beta_j}'\mathbf{x_{itj}} + \mathbf{\gamma'}\mathbf{z_i} + \delta y_{i,t-1}+\epsilon_{itj}
+\end{equation}
 
-We now define a function $B(\cdot)$ that maps the utility derived from choice $j$ to the probability of selecting $j$. Assuming the error terms $\epsilon_{ij}$ are independent across units and are distributed Type I Extreme Value, the probability that unit $i$ chooses insurance type $k$ at time $t$ is 
+Now define a function $B(\cdot)$ that maps the utility derived from choice $j$ to the probability of selecting $j$. For example, if the error terms $\epsilon_{ij}$ are independent across units and are distributed Type I Extreme Value, the probability that unit $i$ chooses insurance type $k$ at time $t$ is 
 
 \[
 \begin{aligned}
 C_{it}(k) = P[U_{itk}>U_{itj} \forall k \neq j] \\
-= B(\mathbf{x_{itj}}, \mathbf{z_i},\alpha_j \mathbf{\beta_j},\mathbf{\gamma}) \\
-= \frac{\exp(U(\mathbf{x_{itj}}, \mathbf{z_i},\alpha_j \mathbf{\beta_j},\mathbf{\gamma}))}{\sum_{ij}[\exp(U(\mathbf{x_{itj}}, \mathbf{z_i},\alpha_j \mathbf{\beta_j},\mathbf{\gamma}))]}
+= B(\mathbf{x_{itj}}, \mathbf{z_i},y_{i,t-1},\alpha_j \mathbf{\beta_j},\mathbf{\gamma},\delta) \\
+= \frac{\exp(U(\mathbf{x_{itj}}, \mathbf{z_i},y_{i,t-1},\alpha_j \mathbf{\beta_j},\mathbf{\gamma},\delta))}{\sum_{ij}[\exp(U(\mathbf{x_{itj}}, \mathbf{z_i},y_{i,t-1},\alpha_j \mathbf{\beta_j},\mathbf{\gamma},\delta))]}
 \end{aligned}
 \]
-This sets up a standard conditional logit model for insurance choice at time $t$. 
+This sets up a standard conditional logit model for insurance choice at time $t$. Alternative forms of $B(\cdot)$---such as based on a nested logit or multinomial logit model---could also be used. 
 
-Now need to model the transition probability from time $t$ to $t+1$.
+## Discrete Choice as a Markovian Process
 
-Now suppose we wish to model an exogenous change to the choice set. For example, in ex ante policy evaluation we typically model how a proposed reform alternative changes the characteristics, quality and price of insurance. These changes will affect utility and, in turn, can affect the ultimate choice of insurance covearge $y_{it}$. 
+In this theoretical setup, the HIU's selection depends on attributes of the HIU and insurance choice options, as well as on the HIU's previous choice ($y_{i,t-1}$). This latter assumption links the discrete choice framework to a discrete time Markovian process in which the future evolution of choices depends on the last choice made.
 
-A standard assumption in behavioral microsimulation is that the exogenous change does not affect the unobserved disturbance term $\epsilon_{itj}$. Thus, [differences in predicted utility](https://onlinelibrary.wiley.com/doi/10.1002/jae.755) can be used to derive transition probabilities among the J choices. 
+Cast in this light, the multinomial choice process at two periods can be specified in terms of a transition probability matrix $\mathbf{R_i} =  [r_{irs}]$. Cells in this $J \times J$ matrix are defined by transition probabilities  $r_{irs} = P(y_{it} = s | y_{i,t-1}=r)$, or the  probability of unit $i$ transitioning to choice $s$ conditional on having previously selected choice $r$. Rows pertain to coverage at time $t$ and columns to coverage at time $t+1$; thus, each row in this matrix sums to 1.  At a population level (with size $N$) we  define $\mathbf{R} =  [r_{rs}]$ where $r_{rs} = \sum_{i=1}^Nr_{irs}/N$.
+
+
+## Unifying Diverse Approaches to Ex Ante Policy Evaluation 
+
+A critical takeway is that along with estimates on the ex ante distribution of coverage, the set of population-level transition probabilities ($r_{rs}$) are sufficient statistics for modeling coverage changes under a proposed reform.  Moreover, the individual-level transition probabilities ($r_{irs}$) also provide a critical crossing point between diverse approaches to ex ante policy modeling based on utility maximization and price elasticities. 
+
+To see this, consider a two period model at time $t_0$ (pre-reform) and $t_0+1$ (post-reform) and define a baseline occupancy vector $\mathbf{c}_{t_0} = {c_{1t_0},\dots,c_{Jt_0}}$ where 
+
+\[
+c_{jt_0} = \sum_{i}^N C_{it_0}(j)
+\]
+For example, if there are four possible coverage categories (employer-sponsored insurance [esi], private non-group insurance [ng], public insurance [pub] and uninsured) then $\mathbf{c}_{t_0}$ summarizes the number of individuals in each category in the ex ante (i.e., pre-reform) period. 
+
+In principle, one could estimate $\mathbf{c}_{t_0}$ based on estimation of a choice model. Often, however, estimates of $\mathbf{c}_{t}$ are derived in part from a weighted sum or average of individual-level insurance data in a federal survey, such as the Curernt Population Survey (CPS) or American Community Survey (ACS). It is also common for models to further calibrate survey-based estimates of $\mathbf{c}_{t_0}$ to match known and/or projected population totals.^[This weighted sum is obtained by the Horvitz Thompson estimator for the sum of a pseudo-population based on survey data.]
+
+The distribution of coverage at time $t_0+1$ can be estimated by multiplying the baseline occupancy vector by the transition probability matrix:
+
+\begin{equation}
+\label{eq:markov_trace}
+\mathbf{c}_{t_0+1} = \mathbf{c}_{t_0}'\mathbf{R}
+\end{equation}
+As we discuss in the section below, this discrete-time Markov trace is a key building block for assessing health insurance market changes using diverse appraoches to ex ante policiy modeling. 
+
+### Modeling Policy Changes
+
+Suppose our goal is to model an exogenous change to the choice set. This change could be brought about due to a reform that affects the price, availability, plan quality, and/or characteristics of insurance. 
+
+A standard assumption in behavioral microsimulation is that the exogenous change does not affect the unobserved disturbance term $\epsilon_{itj}$. Rather, the policy change affects utility through its impact on prices, quality, offers of employment-based insurance, etc. 
+
+To model these changes via microsimulation, attributes of plans and individuals in the microdata are adjusted to reflect the reform scenario.  In a utility maximization model,  [differences in predicted utility](https://onlinelibrary.wiley.com/doi/10.1002/jae.755) are used to derive new unit-level choice probabilities under the modeled reform.  In an elasticity-based microsimulation model, price changes for each of the $J$ insurance options are simulated for units in the microdata. Elasticities and further adjustments (e.g., income effects if subsidies or price increases are large relative to total income) are then applied to derive new choice probabilities.^[In both a utility maximization model and an elasticity-based model, simulation might be carried out at several levels of a hierarchy. For example, an employed worker within an HIU faces a probability of having an offer of employer-sponsored insurance (ESI).  This probability is often simulated based on a "synthetic firm" constructed around the worker's age and earnings profile. Specifically, the probability of an ESI offer faced by the worker is based on a synthetic firm-level simulation that accounts for observed ESI offer rates by industry and occupation, and that models potential changes to the structure, cost, and availability of ESI under the modeled reform scenario.]
+
+To formalize this process, we re-define key quantities in the framework above in terms of potential outcomes. $\mathbf{c}_{t_0+1}(0)$ is the distribution of coverage under the status quo, and $\mathbf{c}_{t_0+1}(1)$ is the distribution under the policy change. Similarly, $\mathbf{R}(0)$ is the transition probability matrix with no policy change, and $\mathbf{R}(1)$ is the transition probabilitiy matrix under reform.
+
+<!-- ^[Note that in a truly static model, $\mathbf{c}_t(0)=\mathbf{c}_t$. However, many "static" models---such as used by the CBO---also update the baseline (status quo) scenario to include demographic projections, match projections of future administrative enrollment totals, etc. That is, $\mathbf{c(0)}$ and $\mathbf{c(1)}$ are designed to capture coverage at some future point $t+1$.  In that case, $\mathbf{\tilde c(0)} = w(\mathbf{c_{0}})$, where $w(\cdot)$ defines some procedure for reweighting the underlying microdata to match baseline scenario calibration targets; this same reweighting procedure is also built into projections of $\mathbf{\tilde c(1)}$.] -->
+
+<!-- ^[A similar reweighting or calibration scheme could also be applied to the microdata so that estimates of $\mathbf{R}(0)$ and $\mathbf{R}(1)$ also match calibration targets.] -->
+
+While estimates of the effect of reform on transition probabilities---that is, $[\mathbf{R}(1) - \mathbf{R}(0)]$---may be of interest, often the quantity of interest is the counterfactual change in coverage under a reform alternative:
+
+\begin{equation}
+\begin{aligned}
+\Delta \mathbf{c} = \mathbf{c}_{t_0+1}(1) - \mathbf{c}_{t_0+1}(0) \\
+= \mathbf{c_{t_0}} ' \big ( \mathbf{R}(1) - \mathbf{R}(0) \big ) \label{eq:potential_outcomes}
+\end{aligned}
+\end{equation}
+where $\mathbf{c_{t_0+1}(1)} = \mathbf{c}_{t_0}'\mathbf{R(1)}$ and $\mathbf{c}_{t_0+1}(0) = \mathbf{c}_{t_0}'\mathbf{R(0)}$. 
+
+Thus, to model a reform alternative three quantities are needed: the ex ante occupancy vector (i.e., $\mathbf{c}_{t_0}$) and estimates of the transition probability matrix under the status quo (i.e., $\mathbf{\hat R}(0)$) and under reform (i.e., $\mathbf{ \hat R}(1)$).
+
+The upshot of this framework is that estimates of $\mathbf{\hat R}(0)$ and $\mathbf{\hat R}(1)$ can be derived from any number of model types. For example, as noted above these estimates could derive from a microsimulaton model based on calibrated microdata and a specified utility model or price elasticity equations. Or, as we show later in this study, $\mathbf{\hat R}(0)$ and $\mathbf{\hat R}(1)$ can be based on transition probabilities estimated by or derived from a reduced form model.
+
+## Example: Congressional Budget Office Health Reform Model 
+
+A key difference between the CBO model and the discrete time framework above is that the CBO model is static: it does not simulate individual trajectories before and after a policy change.^[Estimates in the CBO model are also adjusted to account for other policy changes simulated in different microsimulation models for the Medicaid program, federal taxes, etc. Multi-year projections are not based on a longitudinal simulation, but are rather constructed via updates to baseline coverage occupancy to reflect population changes, inflation, etc.] Rather, the CBO model adopts a similar utility maximization approach and compares simulated baseline and counterfactual choices and costs for a given reform alternative. In other words, the CBO model produces estimates of $\mathbf{c}_{t_0+1}(0)$ and $\mathbf{c}_{t_0+1}(1)$.
+
+Beyond this, however, the CBO modeling is similar in terms of its foundation in utility maximization theory and discrete choice. For a given choice unit (a health insurance eligiblity unit), the CBO model specifies a utility representation in which utility depends on  a systematic component ($V_{in}$) and an (unobservable) stochastic component $\epsilon_{in}$:
+
+\[
+U_{ij} = \beta_1 V_{ij} + \epsilon_{ij}
+\]
+
+This utility specification is a close analogue to \autoref{eq:utility}, with the exception of an additional term ($\beta$) that adjusts the systematic component of utility. This scaling factor is designed to translate the utility value HIUs place on a given alternative into dollar terms. 
+
+The systematic component of utility is further modeled using microdata on individuals and simulated employer choices to offer insurance. For a single individual the  modeled systematic component takes the following form:
+
+\[
+V_{ij} = y_i - C_{ij} - E[H_{ij}] - \frac{1}{2}\rho_j\texttt{Var}(H_{ij}) + \delta_{1j}(y_i,a_i)
+\]
+where $y_i$ is the individual's income, $a_i$ is the individual's age, $C_{ij}$ is the out-of-pocket cost to the individual of coverage alternative $j$ (e.g., premium, any mandate penalty, etc.), $E[H_{ij}]$ and $\texttt{Var}(H_{ij})$ are the expectation and variance of the individual's out-of-pocket health expenditure on coverage alternaive $j$, $\rho_j$ is the coefficient of absolute risk aversion, and $\delta_{1j}$ is a utility shifter specific to each coverage type $j$. 
+
+The utility shifter in the above equation is designed to either increase or decrease the value of each coverage type--possibly varying by age or income--based on various factors. These factors could include the individul's awareness of their eligibility for the program, their ability to  enroll in the program (e.g., through a website, or through a more or less cumbersome enrollment process), their preferences for or against certain types of coverage, etc. In addition, the individual's out-of-pocket spending  ($H_{in}$) varies by insurance type, and is capped (based on income) to reflect the availability of uncompensated care and bankruptcy as implicit sources of insurance. 
+
+Each indiviual in the model faces a set of insurance options in their choice set (e.g., based on whether an offer of emloyment-based coverage is available to them, whether they are eligible for public insurance, etc.). These utilities are then fed through a nested logit framework to derive coverage take-up probabilities. Estimates of $\mathbf{c}_{t_0+1}(0)$ are based on aggregating these choice probabilities under the baseline scenario, and estimates of $\mathbf{c}_{t_0+1}(1)$ are based on aggregating choice probabilities under the modeled reform. 
+
+## Example: Modeling Full Expansion of Medicaid Under the ACA
+
+The set of parameters encompassed by $\mathbf{c}_{t_0}$, $\mathbf{R(0)}$, and $\mathbf{R(1)}$ are sufficient statistics for modeling the impact of potential reforms to US health insurance markets. Critically, these parameters could be generated based on a microsimulation model, or they could be derived simply from reduced form estimates of the relevant quantities of interest. 
+
+In this section, we provide a proof of concept of this reduced form approach by demonstrating how reduced-form evidence on coverage take-up under the ACA's state-level Medicaid expansion can be used to generate projections of the cost and coverage impacts of full expansion in all 50 states. 
+
+
+
+
+
+<!-- Again, all that is needed to model coverage changes is the baseline (ex ante) occupancy vector $\mathbf{c_{t=0}}$ and the transition probability matrices under the status quo and under reform. These quantities are often modeled at the choice unit level (i.e., all quantities above would be subscribed by $i$) and then aggregated to obtain population-level estimates. But in principle reduced form estimates of $\mathbf{\hat R}(1)$ and $\mathbf{\hat R}(0)$ could also be used.  -->
+
+
+
+
+
+
+
+
+<!-- ## Linkage to Utility-Maximization Based Microsimulation Models -->
+
+<!-- In addition to providing a set of sufficient statistics for modeling coverage changes, the transition proabilities defined above provide a critical shared crossing point between different approaches to ex ante policy evaluation. It is easiest to see this by first starting with microsimulation models based on utility maximization, such as used by the CBO and by the RAND Corporation.  -->
+
+<!-- ### Congressional Budget Office Model  -->
+
+
+
+<!-- The baseline occupancy vector and  That is, once we know these probabilities and how they change under a given reform option, we can simulate the impact on the overall coverage distribution in the population. By attaching costs to population movements among insurance types, we can simulate the cost impact to the government. And finally, as we show below, social welfare weights can also be attached to population movements. These weights can then be aggregated and compared across reform alternatives to make comparative evaluations of policy options.  -->
+
+
+
+# Scratch
+
 
 <!-- We define $r_{ikm}$ as the probability of transitioning from choice $k$ to choice $m$.  These transition probabilities can then be summarized in a $J \times J$ transition probability matrix $T_{i}$ -->
 
@@ -136,24 +248,6 @@ In the equation above, the set of transition probabilities $r_{k,j}$ can be cons
 ## Utility Maximization Models
 <!-- https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2965891/ -->
 
-CBO estimates the utility ($U_{in}$) for HIU $i$ from coverage alternative $n$ based on a systematic component ($V_{in}$) and an (unobservable) stochastic component $\epsilon_{in}$:
-
-\[
-U_{in} = \beta_1 V_{in} + \epsilon_{in}
-\]
-
-In the equation above, the systematic component of utility ($V_{in}$) is adjusted upwards of downwards based on a scaling factor $\beta_1$ that translates the utility value HIUs place on a coverage alternative into dollars. 
-
-The systematic component of utility is further modeled using a utility specification. For a single individual this takes the following form:
-
-\[
-V_{in} = y_i - C_{in} - E[H_{in}] - \frac{1}{2}\rho_n\texttt{Var}(H_{in}) + \delta_{1n}(y_i,a_i)
-\]
-where $y_i$ is the individual's income, $a_i$ is the individual's age, $C_{in}$ is the out-of-pocket cost to the individual of coverage alternative $n$ (e.g., premium, any mandate penalty, etc.), $E[H_{in}]$ and $\texttt{Var}(H_{in})$ are the expectation and variance of the individual's out-of-pocket health expenditure on coverage alternaive $n$, $\rho_n$ is the coefficient of absolute risk aversion, and $\delta_{1n}$ is a utility shifter specific to each coverage type $n$. 
-
-The utility shifter in the above equation is designed to either increase or decrease the value of each coverage type--possibly varying by age or income--based on various factors. These factors coudl include the individul's awareness of their eligibility for the program, their ability to  enroll in the program (e.g., through a website, or through a more or less cumbersome enrollment process), their preferences for or against certain types of coverage, etc. In addition, the individual's out-of-pocket spending  ($H_{in}$) varies by insurance type, and is capped (based on income) to reflect the availability of uncompensated care and bankruptcy as implicit sources of insurance. 
-
-Each indiviual in the model faces a set of insurance options in their choice set (e.g., based on whether an offer of emloyment-based coverage is available to them, whether they are eligible for public insurance, etc.). These utilities are then fed through a nested logit framework to derive coverage take-up probabilities. 
 
 
 

@@ -1,0 +1,17 @@
+
+# Purpose
+To develop a discrete time and choice modeling framework for simulation of reforms in US health insurance programs and markets, and to improve the rigor of public finance microsimulation by incorporating recent innovations in methodological  practices and reporting from cost-effectiveness research. 
+
+# Methods 
+We develop a discrete-choice utility maximization framework for simulation of policy reforms to health insurance markets.  This framework has roots in (Markov) modeling methods commonly used for health technology assessment, but also encompasses diverse approaches public finance policy evaluation based on utility maximzation and elasticity-based microsimulation models.  We also tie together diverse approaches for comparative welfare assessments and evaluations of the importance of parameter uncertainty in policy decision making. Specifically, demonstrate how the marginal value of public funds (MVPF)---a summary measure of the costs and benefits of public policy used in public finance---can be used as lens to evaluate the value of information (VOI) of uncertain parameters. 
+
+Through an application simulating further expansion of coverage via public insurance expansion vs. via subsidies for private insurance,
+
+
+# Results
+<!-- , stated in sufficient detail to support conclusions. It is not satisfactory to state “Results will be discussed” or “Data will be presented.” -->
+
+# Conclusions 
+
+
+

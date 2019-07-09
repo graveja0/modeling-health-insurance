@@ -8,3 +8,7 @@ input/
 data/
 reference/
 *cache*
+output/
+*.html
+*.log
+R/*.html

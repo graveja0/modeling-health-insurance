@@ -1,15 +1,17 @@
 ---
-title: "Ex Ante Health Policy Evaluation: A Sufficient Statistics Approach"
-author: | 
+title: 'Ex Ante Health Policy Evaluation: A Unified Approach'
+author: |
   | John A. Graves
   | Vanderbilt University
 date: "4/17/2019"
-header-includes:
-    - \usepackage{setspace}\doublespacing
-urlcolor: blue   
-output: pdf_document
-indent: TRUE
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+indent: yes
+header-includes: \usepackage{setspace}\doublespacing
 fontsize: 12pt
+urlcolor: blue
 ---
 
 <!-- \centering -->
@@ -33,4 +35,3 @@ source(here::here("R/manifest.R"))
 
 ```{r, child = "./general-modeling-framework.Rmd"}
 ```
-

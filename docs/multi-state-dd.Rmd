@@ -1,0 +1,20 @@
+---
+title: "Multi-State Difference in Difference Modeling"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+The objective of this notebook is to fit the multi-state DD model to the SIPP data.
+
+```{r}
+# Setup and Tidy Data
+library(here)
+source(here("R/multi-state-dd/setup-and-tidy.R"))
+# Estimate the model
+source(here("R/multi-state-dd/estimate-dd.R"))
+source(here("/R/multi-state-dd/model-transitions.R"))
+source(here("R/multi-state-dd/estimation-and-inference.R"))
+
+```
+

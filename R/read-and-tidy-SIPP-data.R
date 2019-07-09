@@ -50,6 +50,10 @@ df_sipp_full <-
                          ifelse(privhimth==1,2,
                                 ifelse(medcaidmth==1 | medcarmth==1,3,
                                        ifelse(rhimth==2,4,-9)))))) %>% 
+  mutate(hicov3 = 
+           ifelse(hicov %in% 1:2,1, 
+                  ifelse(hicov==3, 2, 
+                         ifelse(hicov==4,3, NA)))) %>% 
   group_by(ssuid,pnum,monthcode) %>% 
   mutate(year_in_survey = row_number())  %>% 
   mutate(id = paste0(ssuid,"-",pnum)) %>% 
