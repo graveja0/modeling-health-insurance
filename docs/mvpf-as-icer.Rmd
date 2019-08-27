@@ -1,0 +1,60 @@
+# Comparative Policy Assessments
+
+Traditionally, models of the U.S. health care system have shied away from producing comparative assessments of overall welfare impact. Rather, models produce an array of intermediary welfare-relevant quantities of interest and leave it to policymakers to weigh these factors when making decisions. These factors might include changes in health insurance coverage, health care spending, tax revenue and expenditures, and premiums.
+
+While this approach lends away from making explicit normative declarations, it has significant shortcomings. For one, makes it difficult to make considerations over efficiency. Two policies may achieve the same objective, but one may do so more efficiently (i.e., with lower costs or by imposing less friction on the broader economy). Often, policies have slightly different impacts so distinctions over efficiency are not clear cut. Second, comparative assessment between policies (including the choice not to do anything) facilitates assessment of the "opportunity cost" of modeling uncertainty in making policy decisions. A simple example illustrating these two points follows.
+
+Suppose policymakers wish to increase coverage in the US population. One policy option uses targeted cash transfers for the purchase of private insurance (i.e., subsidies), while the other is based on in-kind transfers via expansion of public insurance programs such as Medicaid or Medicare. A detailed microsimulation model can be deployed to simulate behavioral reactions that, in turn, result in alternative distributions of coverage (public, private, uninsured). Furthermore, attributes of individuals (e.g., health status for determining equilibrium premiums) and the policy (e.g., subsidy schedules, expected per-beneficiary costs under public insurance) can be incorporated to both inform individual behavioral reactions and to project the impact on government revenues and costs. 
+
+This exercise will result in two sets of projections, as summarized in a hypothetical scenario in the table below. But rarely will the two policies cover *exactly* the same number of people (Scenario A)--meaning that a simple comparison of overall cost will reveal the most efficient policy. A more likely situation is Scenario B, which results in differential coverage and cost impact. 
+
+
+## 
+Policy models used throughout the world to make policy decisions over new health technologies take a vastly different appraoch. These models conceptualize the incremental health gains 
+
+
+
+
+
+
+## Marginal Value of Public Funds
+
+The marginal value of public funds (MVPF) is the ratio of the marginal benefit of a public policy to the marginal cost of the policy. Alternatively, we can also think about the MVPF as the ratio between beneficiaries' willingness to pay to the cost to the government of an increase in expenditures per beneficiary.
+
+The MVPF is a useful too for comparative assessments of public policies that target the same income group. To compare policies that affect different income groups, however, Hendren (2019) provides a set of "efficient welfare weights" that can be used to  project the policy in terms of redistributing dollars between the two affected groups via the tax system. 
+
+Broadly speaking the MVPF is defined for a policy $i$ as
+
+\[
+MVPF_i = \frac{B_i}{C_i}
+\]
+where $B_i$ is the benefit of the policy and $C_i$ is the cost. If the policy in question is a targeted cash transfer of \$1, then we can simplify this equation considerably by appealing to the Envelope theorem, which states that the marginal beneficiary is indifferent and thus values the benefit at \$0. If we define $I$ as the number of infra-marginal recipients, the numerator thus becomes \$I. 
+
+The "cost" of the cash transfer has two components: the mechanical cost (\$I) and the fiscal externality ($FE$), i.e., $C_i = I + FE$. We can therefore simplify to obtain the following:
+
+\[
+MVPF_i = \frac{1}{1+FE}
+\]
+
+Things become more complicated with a in-kind non-cash transfer, however. That's because the marginal benefit of the program is not just equivalent to \$I. The envelope theorem still allows us to ignore the benefit to marginal enrollees. And the cost of the program is still the mechanical cost plus the fiscal externality. But the benefits to infra-marginal enrollees may be valued greater or less than costs. So we must denote by $W$ the average willingness to pay (out of own income) by infra-marginal recipients per dollar of in-kind benefit. 
+
+In that case the MVPF becomes 
+
+\[
+MVPF_i = \frac{W}{1+FE}
+\]
+
+## Incremental Cost-Effectiveness Ratios
+
+A branch of health economics focused on health technology and policy evaluation has developed an analogous measure, the "incremental cost-effectiveness ratio" which is defined as
+
+\[
+ICER = \frac{\textrm{Incremental Cost}}{\textrm{Incremental Effectiveness}}
+\]
+
+Benefit, or "effectiveness" is measured in terms of quality-adjusted life years (QALYs) which represent the equivalent number of "perfectly healthy" life years a given policy or treatment yields. Often, effectiveness is summarized as the average QALYs in the population of interest. 
+
+
+
+
+

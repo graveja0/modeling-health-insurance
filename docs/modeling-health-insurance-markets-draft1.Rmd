@@ -24,7 +24,7 @@ knitr::opts_chunk$set(
 	echo = FALSE,
 	message = FALSE,
 	warning = FALSE,
-	cache = FALSE
+	cache = TRUE
 )
 # Load packages and source functions. 
 source(here::here("R/manifest.R"))
@@ -34,4 +34,7 @@ source(here::here("R/manifest.R"))
 ```
 
 ```{r, child = "./general-modeling-framework.Rmd"}
+```
+
+```{r, child = "./modeling-based-on-sipp.Rmd"}
 ```

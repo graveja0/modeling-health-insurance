@@ -1,0 +1,489 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+## Example: Modeling Full Expansion of Medicaid Under the ACA
+
+The set of parameters encompassed by $\mathbf{c}_{t_0}$, $\mathbf{R(0)}$, and $\mathbf{R(1)}$ are sufficient statistics for modeling the impact of potential reforms to US health insurance markets. Critically, these parameters could be generated based on a microsimulation model, or they could be derived simply from reduced form estimates of the relevant quantities of interest. 
+
+In this section, we demonstrate a reduced-form approach to modeling expansion of health insurance coverage. 
+
+```{r sipp-setup, echo = FALSE, message = FALSE, warning = FALSE}
+# https://www.nber.org/papers/w25568.pdf pp. 42
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE
+)
+
+scale_fill_Publication <- function(...){
+  library(scales)
+  discrete_scale("fill","Publication",manual_pal(values = c("#386cb0","#fdb462","#7fc97f","#ef3b2c","#662506","#a6cee3","#fb9a99","#984ea3","#ffff33")), ...)
+  
+}
+
+scale_colour_Publication <- function(...){
+  library(scales)
+  discrete_scale("colour","Publication",manual_pal(values = c("#386cb0","#fdb462","#7fc97f","#ef3b2c","#662506","#a6cee3","#fb9a99","#984ea3","#ffff33")), ...)
+  
+}
+
+theme_tufte_revised <- function(base_size = 11, base_family = "Gill Sans", ticks = TRUE) {
+  
+  ret <- ggplot2::theme_bw(base_family = base_family, base_size = base_size) +
+    ggplot2::theme(
+      axis.line = ggplot2::element_line(color = 'black'),
+      axis.title.x = ggplot2::element_text(vjust = -0.3),
+      axis.title.y = ggplot2::element_text(vjust = 0.8),
+      legend.background = ggplot2::element_blank(),
+      legend.key = ggplot2::element_blank(),
+      legend.title = ggplot2::element_text(face="plain"),
+      panel.background = ggplot2::element_blank(),
+      panel.border = ggplot2::element_blank(),
+      panel.grid = ggplot2::element_blank(),
+      plot.background = ggplot2::element_blank(),
+      strip.background = ggplot2::element_blank()
+    )
+  
+  if (!ticks) {
+    ret <- ret + ggplot2::theme(axis.ticks = ggplot2::element_blank())
+  }
+  
+  ret
+}
+```
+
+```{r sipp-run-functions}
+# The primary code for this section can be found in "../../../box/sccs-r01/transitions-dd/analysis/multi-state-dd-modeling-primary-analysis.Rmd" 
+
+source(here::here("../../../box/sccs-r01/transitions-dd/R/manifest.R"))
+#devtools::session_info()
+source(here("../../../box/sccs-r01/transitions-dd/R//prepare-multistate-data.R"))
+source(here("../../../box/sccs-r01/transitions-dd/R//fit-multistate-model.R"))
+source(here("../../../box/sccs-r01/transitions-dd/R//get-cumulative-hazard.R"))
+source(here("../../../box/sccs-r01/transitions-dd/R//add-binary-indicators.R"))
+source(here("../../../box/sccs-r01/transitions-dd/R//transitions-dd-model.R"))
+source(here("../../../box/sccs-r01/transitions-dd/R//ri-permute.R"))
+
+insurance_sipp_lut <- c(
+  "cat_1" = "01_esi_own",
+  "cat_2" = "02_esi_dep",
+  "cat_3" = "03_priv_oth",
+  "cat_4" = "04_public",
+  "cat_5" = "05_uninsured"
+)
+
+insurance_lut <- 
+  c("01_esi_own" = "Employer - Own Policy",
+    "02_esi_dep" = "Employer - Dependent",
+    "03_priv_oth" = "Private - Non-Employer",
+    "04_public" = "Public",
+    "05_uninsured" = "Uninsured")
+
+
+conflict_prefer("filter","dplyr")
+```
+
+```{r}
+months_to_model <- c(1,24) 
+create_sipp_data = FALSE
+if (create_sipp_data) source(here("../../../box/sccs-r01/transitions-dd/R/read-and-tidy-SIPP-data.R"))
+
+df_sipp_full <- read_rds(here("../../../box/sccs-r01/transitions-dd/input/sipp/01_sipp-tidy_v2-0.rds"))
+
+# Get the weight (first month weight)
+df_w <- 
+  df_sipp_full %>% 
+  mutate(idnumber = id) %>% 
+  group_by(idnumber) %>% 
+  mutate(year = ifelse(swave ==1 , 2014, ifelse(swave==2,2015,2016))) %>% 
+  mutate(month = ifelse(swave ==1 , monthcode, ifelse(swave==2,monthcode+12,monthcode+24))) %>% 
+  filter(month==1) %>% 
+  mutate(expansion_state = 
+           as.integer(expansion_date == "2014-01-01" & 
+                        (substantial_expansion_state == 1 | full_expansion_state == 1 |
+                           mild_expansion_state==1))) %>% 
+  mutate(exclude_state = as.integer(expansion_date != "2014-01-01")) %>% 
+  # Expansion state varies in the underling data due to moves. Just keeping state at 
+  # baseline. 
+  select(idnumber,contains("state"), sex, race, weight = wpfinwgt) %>% 
+  ungroup() 
+
+df_sipp <- 
+  df_sipp_full %>%   
+  # Expansion state varies in the underling data due to moves. Just keeping state at 
+  # baseline. 
+  select(-contains("state")) %>% 
+  filter(age < 63 & age > 18) %>% 
+  mutate(year = ifelse(swave ==1 , 2014, ifelse(swave==2,2015,2016))) %>% 
+  mutate(month = ifelse(swave ==1 , monthcode, ifelse(swave==2,monthcode+12,monthcode+24))) %>% 
+  mutate(idnumber = id) %>% 
+  mutate(insurance_type = ifelse(rhimth==2 & medcaidmth==0 & medcarmth==0 & ephi_t==0 & milmth==0 & privhimth==0,5,
+                                 ifelse(medcaidmth==1 | medcarmth==1,4,
+                                        ifelse((ephi_t==1 | milmth==1) & own_cov==1,1,
+                                               ifelse((ephi_t==1 | milmth==1) & own_cov==0,2,
+                                                      ifelse(privhimth==1,3,NA)))))) %>% 
+  
+  mutate(insurance_type=factor(insurance_type, labels = insurance_sipp_lut)) %>% 
+  #mutate(insurance_type = as.numeric(factor(insurance_type))) %>% 
+  select(idnumber,month,insurance_type)  %>% 
+  group_by(idnumber) %>% 
+  ungroup()  %>% 
+  left_join(df_w,"idnumber") %>% 
+  filter(exclude_state != 1 | is.na(exclude_state)) %>% 
+  mutate(weight = 1) %>% 
+  mutate(state = as.character(paste0(state))) %>% 
+  group_by(idnumber) %>% 
+  mutate(months_in_sample = n())
+
+################################################################################
+# Define estimation sample (Two-Period Balanced Panel Case)
+################################################################################
+df <-                                     # Data frame for estimation
+  df_sipp %>%
+  filter(month %in% months_to_model) %>% 
+  filter(months_in_sample == months_to_model[2]) %>% 
+  mutate(post_expansion = as.integer(month>12)) %>% 
+  select(insurance_type,expansion_state,post_expansion,idnumber,month,state,weight) %>% 
+  arrange(idnumber,month) %>% 
+  filter(!is.na(insurance_type)) %>% 
+  group_by(idnumber) %>% 
+  filter(n()==2) %>% 
+  group_by(idnumber) %>% 
+  mutate(tmp = ifelse(row_number()==1, insurance_type,lag(insurance_type))) %>% 
+  ungroup() %>% 
+  mutate(baseline_insurance_type = factor(tmp, labels = insurance_sipp_lut)) %>% 
+  select(-tmp)
+################################################################################
+
+df_sipp <- 
+  df_sipp %>% 
+  mutate(in_twoper_sample = as.integer(idnumber %in% unique(df$idnumber))) %>% 
+  ungroup() 
+
+dd_ests_over_time <- 
+  2:24 %>% 
+  map(~(df_sipp %>% 
+          ungroup() %>% 
+    filter(in_twoper_sample==1) %>% 
+  count(month,insurance_type,expansion_state,wt = weight) %>% 
+  group_by(month,expansion_state) %>% 
+  mutate(pct = n/sum(n)) %>% 
+  filter(month %in% c(1,.x)) %>% 
+  select(-n) %>% 
+  spread(month,pct) %>% 
+  set_colnames(c("insurance_type","expansion_state","pre","post")) %>% 
+  filter(!is.na(expansion_state)) %>% 
+  mutate(change = post - pre) %>% 
+  select(insurance_type,expansion_state,change) %>% 
+  ungroup() %>% 
+  mutate(expansion_state = factor(expansion_state,labels = c("nonexpansion","expansion"))) %>% 
+  spread(expansion_state,change) %>% 
+  mutate(dd = expansion-nonexpansion)
+  )) %>% 
+  bind_rows(.id = "comparison") %>% 
+  mutate(foo = as.numeric(paste0(comparison))+1) 
+
+```
+
+```{r}
+
+p <- dd_ests_over_time %>% 
+  mutate(insurance2 = insurance_lut[insurance_type]) %>% 
+  ggplot(aes(x = foo , y = dd * 100)) + geom_line(aes(colour = insurance2)) +
+  ylab("Percentage point change relative to January 2013") + 
+  xlab("Months Since January 2013") + 
+  geom_vline(aes(xintercept = 13),lty=2) + 
+  xlim(c(0,45)) + 
+  annotate("text",x = 13.5,y = 4,label = "Primary Medicaid\nExpansion Date",hjust =0,cex = 3, family  = "Gill Sans") + 
+  geom_hline(aes(yintercept = 0)) + theme_tufte_revised() +
+  geom_hline(yintercept = c(-2,-1,1,2,3,4),colour = "lightgrey",lty=2) + 
+  scale_y_continuous(breaks = -2:4, labels = paste0(format(round(-2:4),nsmall=1)))
+
+p_final <- directlabels::direct.label(p,method=list("last.bumpup",fontfamily = "Gill Sans",cex = .8))  
+```
+
+```{r, fig.cap = "Difference-in-Diffrence Estimates on Change in Transition Probability, by Coverage Type and Time Since January 2013"}
+p_final
+```
+
+```{r}
+
+run_results = FALSE
+
+if (run_results) {
+  dd_lm <- 
+    df %>% 
+    fit_transitions_dd(outcome = insurance_type,
+                       id = idnumber,
+                       time = month,
+                       ff = as.formula( ~ post_expansion + expansion_state + post_expansion * expansion_state),
+                       ff_trans = as.formula( ~ post_expansion + expansion_state + baseline_insurance_type + 
+                                                 post_expansion * baseline_insurance_type + post_expansion * expansion_state + 
+                                                 expansion_state * baseline_insurance_type + 
+                                                post_expansion * expansion_state * baseline_insurance_type),
+                       term = "post_expansion:expansion_state"
+    )
+  
+  dd_lm_ri <- df %>%
+      ri_permute(m = 1000, 
+                 treatment = expansion_state, 
+                 cluster = state, 
+                 idvar = idnumber,
+                 outcome = insurance_type) %>% 
+      do(fit_transitions_dd(df = . ,
+                            outcome = insurance_type,
+                         id = idnumber,
+                         time = month,
+                         ff = as.formula( ~ post_expansion + expansion_state + post_expansion * expansion_state),
+                         ff_trans = as.formula( ~ post_expansion + expansion_state + baseline_insurance_type + 
+                                                   post_expansion * baseline_insurance_type + post_expansion * expansion_state + 
+                                                   expansion_state * baseline_insurance_type + 
+                                                  post_expansion * expansion_state * baseline_insurance_type),
+                         term = "post_expansion:expansion_state"
+      ))
+  
+    list(dd_lm = dd_lm, 
+         dd_lm_ri = dd_lm_ri)  %>% 
+      write_rds("output/results/primary-results.rds")
+}
+
+
+results <- 
+  read_rds(here("../../../box/sccs-r01/transitions-dd/output/results/primary-results.rds"))
+dd_lm <- results$dd_lm
+dd_lm_ri <- results$dd_lm_ri
+```
+
+
+```{r}
+
+get_twoper_result <- function(df) {
+  df %>% 
+  select(term,starts_with("marginal")) %>% 
+  na.omit() %>% 
+  gather(estimate, value, -term) %>% 
+  filter(term=="post_expansion:expansion_state") %>% 
+  mutate(group = insurance_sipp_lut)  %>% 
+  select(group,value)
+}
+
+get_quantile_ranking <- function(obs,inf) {
+  inf %>% 
+  group_by(replicate) %>% 
+  bind_rows(
+    obs %>% mutate(replicate=0) 
+  ) %>% 
+  group_by(group) %>% 
+  mutate(quantile_rank = percent_rank(value)) %>% 
+  filter(replicate == 0) %>% 
+  select(group,quantile_rank)
+}
+
+get_pvalue <- function(obs,inf) {
+  inf %>% 
+  group_by(replicate) %>% 
+  left_join(obs,"group") %>% 
+  mutate(obs_lt_est = as.integer(abs(value.y) < abs(value.x))) %>% 
+  group_by(group) %>% 
+  summarise(p_value = mean(obs_lt_est)) 
+}
+
+get_transprob_result <- function(df) {
+  df %>% 
+  select(ex_ante,starts_with("DD")) %>% 
+  na.omit() %>% 
+  gather(estimate, value, -ex_ante) %>% 
+  mutate(ex_post = estimate) %>% 
+  mutate(ex_post = gsub("^DD_","",ex_post)) %>% 
+  select(ex_ante,ex_post,value)
+}
+
+get_dd_marginal <- function(p1,p0,R1,DD,C,D) ((p1 %*% (C * R1) - p1*D) - (p0 %*% (C * (R1-DD)) - p0*D))
+
+get_marginal_estimates <- 
+  function(df, C = matrix(1,nrow = 5, ncol = 5), D = rep(1,5)) {
+    
+    # Regression Parameters (not going to output this now as decompositions won't match)
+    regression_parameters <- 
+      df %>% 
+        select(term,starts_with("marginal")) %>% 
+        filter(term == "post_expansion:expansion_state") %>% 
+        gather(ex_ante,beta,-term) %>% 
+        select(-term)
+    
+    p1 <- df %>% filter(!is.na(ex_ante)) %>% pull(p_Z1_T0) #%>% as.matrix()
+    p0 <- df %>% filter(!is.na(ex_ante)) %>% pull(p_Z0_T0) #%>% as.matrix()
+    tmp <- df %>% filter(!is.na(ex_ante)) %>% select(ex_ante,starts_with("DD")) 
+    DD <- tmp[,-1] %>% as.matrix()
+    rownames(DD) <- tmp$ex_ante
+    tmp2 <- df %>% filter(!is.na(ex_ante)) %>% select(ex_ante,starts_with("R1"))
+    R1 <- tmp2[,-1] %>% as.matrix()
+    rownames(R1) <- tmp2$ex_ante
+
+    get_dd_marginal(p1 = p1, p0 = p0, R1= R1, DD = DD, D = D, C = C ) %>% 
+      data.frame() %>% 
+      gather(estimate,value) %>% 
+      mutate(group = gsub("R1_","",estimate)) %>% 
+      select(-estimate)
+  }
+
+get_decomp_est <- function(df,df_ri,C,D) {
+
+  # Pooled (Transition) Model Marginal Result
+  pooled_marginal_result_obs <- 
+    df %>% 
+    do(get_marginal_estimates(df = .,C = C, D = D)) 
+  pooled_marginal_result_inf <- 
+    df_ri %>% 
+    group_by(replicate) %>% 
+    do(get_marginal_estimates(df = .,C = C, D = D)) 
+  pooled_marginal_result <- 
+    pooled_marginal_result_obs %>% 
+    left_join(get_quantile_ranking(obs = pooled_marginal_result_obs, inf = pooled_marginal_result_inf),"group") %>% 
+    left_join(get_pvalue(obs = pooled_marginal_result_obs, inf = pooled_marginal_result_inf),"group")
+  
+  pooled_marginal_result_formatted <- 
+    pooled_marginal_result %>% 
+    select(group, a_pooledl = value, b_p_value = p_value) %>% 
+    gather(row,value,-group) %>% 
+    arrange(group) %>% 
+    mutate(value = ifelse(grepl("^a_",row),format(round(value,4),nsmall=3),
+                          ifelse(value>0.01,paste0("(p=",format(round(value,2),nsmall=1),")"),
+                                 paste0("(p< 0.01)")))) %>% 
+    mutate(group = ifelse(grepl("^a_",row),insurance_lut[group],"")) %>% 
+    select(group,pooled=value)
+  
+  out <- 
+    list(marginal_result = pooled_marginal_result, 
+         marginal_result_formatted = pooled_marginal_result_formatted)
+  
+  return(out)
+  
+}
+
+
+```
+
+```{r}
+## Ex Ante Shares
+ex_ante_shares <- 
+  dd_lm %>% 
+  filter(!is.na(ex_ante)) %>% 
+  select(ex_ante,starts_with("p_Z1_T0"), starts_with("p_Z0_T0")) %>% 
+  na.omit() %>% 
+  tbl_df() %>% 
+  mutate_at(vars(2:3),function(x) format(round(x,3),nsmall=3)) %>% 
+  mutate(test1 = "",test2="") %>% 
+  gather(key,value,-ex_ante,-p_Z1_T0,-p_Z0_T0) %>% 
+  arrange(ex_ante) %>% 
+  group_by(ex_ante) %>% 
+  mutate(n = row_number()) %>% 
+  mutate(treated = ifelse(n==1,p_Z1_T0,NA),
+         control = ifelse(n==1,p_Z0_T0,NA),
+         group = ifelse(n==1,insurance_lut[ex_ante],NA)) %>% 
+  ungroup() %>% 
+  select(group,treated,control)
+  
+# Marginal Model Result
+
+marginal_result_obs <- 
+  dd_lm %>% 
+  get_twoper_result()
+marginal_result_inf <- 
+  dd_lm_ri %>% 
+  group_by(replicate) %>% 
+  do(get_twoper_result(df = .)) 
+marginal_result <- 
+  marginal_result_obs %>% 
+  left_join(get_quantile_ranking(obs = marginal_result_obs, inf = marginal_result_inf),"group") %>% 
+  left_join(get_pvalue(obs = marginal_result_obs, inf = marginal_result_inf),"group")
+
+marginal_result_formatted <- 
+  marginal_result %>% 
+  select(group, a_marginal = value, b_p_value = p_value) %>% 
+  gather(row,value,-group) %>% 
+  arrange(group) %>% 
+  mutate(value = ifelse(grepl("^a_",row),format(round(value,4),nsmall=3),
+                        ifelse(value>0.01,paste0("(p=",format(round(value,2),nsmall=1),")"),
+                               paste0("(p< 0.01)")))) %>% 
+  mutate(group = ifelse(grepl("^a_",row),insurance_lut[group],"")) %>% 
+  select(group,marginal=value)
+
+
+# Pooled (Transition) Model Marginal Result
+pooled_marginal_result_obs <- 
+  dd_lm %>% 
+  do(get_marginal_estimates(df = .)) 
+pooled_marginal_result_inf <- 
+  dd_lm_ri %>% 
+  group_by(replicate) %>% 
+  do(get_marginal_estimates(df = .)) 
+pooled_marginal_result <- 
+  pooled_marginal_result_obs %>% 
+  left_join(get_quantile_ranking(obs = pooled_marginal_result_obs, inf = pooled_marginal_result_inf),"group") %>% 
+  left_join(get_pvalue(obs = pooled_marginal_result_obs, inf = pooled_marginal_result_inf),"group")
+ 
+pooled_marginal_result_formatted <- 
+  pooled_marginal_result %>% 
+  select(group, a_pooledl = value, b_p_value = p_value) %>% 
+  gather(row,value,-group) %>% 
+  arrange(group) %>% 
+  mutate(value = ifelse(grepl("^a_",row),format(round(value,4),nsmall=3),
+                        ifelse(value>0.01,paste0("(p=",format(round(value,2),nsmall=1),")"),
+                               paste0("(p< 0.01)")))) %>% 
+  mutate(group = ifelse(grepl("^a_",row),insurance_lut[group],"")) %>% 
+  select(group,pooled=value)
+
+# Transition Probability Matrix Result
+transprob_result_obs <- 
+  dd_lm %>% 
+  get_transprob_result() %>% 
+  unite(group,ex_ante,ex_post,sep = "_TO_")
+
+transprob_result_inf <- 
+  dd_lm_ri %>% 
+  group_by(replicate) %>% 
+  do(get_transprob_result(df=.) %>% 
+  unite(group,ex_ante,ex_post,sep = "_TO_")) 
+  
+transprob_result <- 
+  transprob_result_obs %>% 
+  left_join(get_quantile_ranking(obs = transprob_result_obs, inf = transprob_result_inf),"group") %>% 
+  left_join(get_pvalue(obs = transprob_result_obs, inf = transprob_result_inf),"group")
+
+transprob_result_formatted <-
+ transprob_result %>% 
+  select(group, a_transprobl = value, b_p_value = p_value) %>% 
+  gather(row,value,-group) %>% 
+  arrange(group) %>% 
+  mutate(value = ifelse(grepl("^a_",row),format(round(value,4),nsmall=3),
+                        ifelse(value>0.01,paste0("(p=",format(round(value,2),nsmall=1),")"),
+                               paste0("(p< 0.01)")))) %>% 
+   separate(group,into = c("ex_ante","ex_post"),sep = "_TO_") %>% 
+   spread(ex_post,value) %>% 
+  mutate(ex_ante = ifelse(grepl("^a_",row),insurance_lut[ex_ante],"")) %>% 
+  select(-row) %>% 
+   set_colnames(c("group",insurance_lut))
+
+
+```
+
+
+```{r}
+tmp <- ex_ante_shares %>% 
+  #cbind(marginal_result_formatted[,-1])  %>% 
+  #cbind(pooled_marginal_result_formatted[,-1]) %>% 
+  cbind(transprob_result_formatted[,-1]) 
+
+tmp %>% kable()
+```
+
+- Get the transition probability matrix for the untreated states. 
+- Get the DD transition probability matix.
+- Add together to get the counterfactual. 
+- Multiply by baseline occupancy vector.
+- Assign costs to transition.
+- Aggregate costs and population figures.

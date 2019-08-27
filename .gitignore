@@ -12,3 +12,5 @@ output/
 *.html
 *.log
 R/*.html
+presentations/
+figures/

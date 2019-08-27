@@ -1,0 +1,133 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+<!-- 01_simulation_construct-baseline.Rmd -->
+
+```{r}
+source(here::here("R/manifest.R"))
+source(here::here("R/shared-objects.R"))
+```
+
+```{r read-and-tidy-sipp-data}
+months_to_model <- c(1,24) 
+create_sipp_data = FALSE
+if (create_sipp_data) source(here("../../../box/sccs-r01/transitions-dd/R/read-and-tidy-SIPP-data.R"))
+
+df_sipp_full <- read_rds(here("../../../box/sccs-r01/transitions-dd/input/sipp/01_sipp-tidy_v2-0.rds"))
+
+# Get the weight (first month weight)
+df_w <- 
+  df_sipp_full %>% 
+  mutate(idnumber = id) %>% 
+  group_by(idnumber) %>% 
+  mutate(year = ifelse(swave ==1 , 2014, ifelse(swave==2,2015,2016))) %>% 
+  mutate(month = ifelse(swave ==1 , monthcode, ifelse(swave==2,monthcode+12,monthcode+24))) %>% 
+  filter(month==1) %>% 
+  mutate(expansion_state = 
+           as.integer(expansion_date == "2014-01-01" & 
+                        (substantial_expansion_state == 1 | full_expansion_state == 1 |
+                           mild_expansion_state==1))) %>% 
+  mutate(exclude_state = as.integer(expansion_date != "2014-01-01")) %>% 
+  # Expansion state varies in the underling data due to moves. Just keeping state at 
+  # baseline. 
+  select(idnumber,contains("state"), sex, race, weight = wpfinwgt) %>% 
+  ungroup() 
+
+df_sipp <- 
+  df_sipp_full %>%   
+  # Expansion state varies in the underling data due to moves. Just keeping state at 
+  # baseline. 
+  select(-contains("state")) %>% 
+  filter(age < 63 & age > 18) %>% 
+  mutate(year = ifelse(swave ==1 , 2014, ifelse(swave==2,2015,2016))) %>% 
+  mutate(month = ifelse(swave ==1 , monthcode, ifelse(swave==2,monthcode+12,monthcode+24))) %>% 
+  mutate(idnumber = id) %>% 
+  # Old version split ESI-own and ESI-dependent
+  # mutate(insurance_type_dep = ifelse(rhimth==2 & medcaidmth==0 & medcarmth==0 & ephi_t==0 & milmth==0 & privhimth==0,5,
+  #                                ifelse(medcaidmth==1 | medcarmth==1,4,
+  #                                       ifelse((ephi_t==1 | milmth==1) & own_cov==1,1,
+  #                                              ifelse((ephi_t==1 | milmth==1) & own_cov==0,2,
+  #                                                     ifelse(privhimth==1,3,NA)))))) %>% 
+  # Pool ESI-Own and ESI-Dependent
+  mutate(insurance_type = ifelse(rhimth==2 & medcaidmth==0 & medcarmth==0 & ephi_t==0 & milmth==0 & privhimth==0,4,
+                                 ifelse(medcaidmth==1 | medcarmth==1,3,
+                                        ifelse((ephi_t==1 | milmth==1) & own_cov==1,1,
+                                               ifelse((ephi_t==1 | milmth==1) & own_cov==0,1, # These are now pooled with ESI-own
+                                                      ifelse(privhimth==1,2,NA)))))) %>% 
+  mutate(insurance_type=factor(insurance_type, labels = insurance_sipp_lut)) %>% 
+  #mutate(insurance_type = as.numeric(factor(insurance_type))) %>% 
+  select(idnumber,month,insurance_type)  %>% 
+  group_by(idnumber) %>% 
+  ungroup()  %>% 
+  left_join(df_w,"idnumber") %>% 
+  filter(exclude_state != 1 | is.na(exclude_state)) %>% 
+  mutate(weight = 1) %>% 
+  mutate(state = as.character(paste0(state))) %>% 
+  group_by(idnumber) %>% 
+  mutate(months_in_sample = n())
+
+################################################################################
+# Define estimation sample (Two-Period Balanced Panel Case)
+################################################################################
+df <-                                     # Data frame for estimation
+  df_sipp %>%
+  filter(month %in% months_to_model) %>% 
+  filter(months_in_sample == months_to_model[2]) %>% 
+  mutate(post_expansion = as.integer(month>12)) %>% 
+  select(insurance_type,expansion_state,post_expansion,idnumber,month,state,weight) %>% 
+  arrange(idnumber,month) %>% 
+  filter(!is.na(insurance_type)) %>% 
+  group_by(idnumber) %>% 
+  filter(n()==2) %>% 
+  group_by(idnumber) %>% 
+  mutate(tmp = ifelse(row_number()==1, insurance_type,lag(insurance_type))) %>% 
+  ungroup() %>% 
+  mutate(baseline_insurance_type = factor(tmp, labels = insurance_sipp_lut)) %>% 
+  select(-tmp)
+################################################################################
+
+df_sipp <- 
+  df_sipp %>% 
+  mutate(in_twoper_sample = as.integer(idnumber %in% unique(df$idnumber))) %>% 
+  ungroup() 
+
+dd_ests_over_time <- 
+  2:24 %>% 
+  map(~(df_sipp %>% 
+          ungroup() %>% 
+    filter(in_twoper_sample==1) %>% 
+  count(month,insurance_type,expansion_state,wt = weight) %>% 
+  group_by(month,expansion_state) %>% 
+  mutate(pct = n/sum(n)) %>% 
+  filter(month %in% c(1,.x)) %>% 
+  select(-n) %>% 
+  spread(month,pct) %>% 
+  set_colnames(c("insurance_type","expansion_state","pre","post")) %>% 
+  filter(!is.na(expansion_state)) %>% 
+  mutate(change = post - pre) %>% 
+  select(insurance_type,expansion_state,change) %>% 
+  ungroup() %>% 
+  mutate(expansion_state = factor(expansion_state,labels = c("nonexpansion","expansion"))) %>% 
+  spread(expansion_state,change) %>% 
+  mutate(dd = expansion-nonexpansion)
+  )) %>% 
+  bind_rows(.id = "comparison") %>% 
+  mutate(foo = as.numeric(paste0(comparison))+1) 
+
+p <- dd_ests_over_time %>% 
+  mutate(insurance2 = insurance_lut[insurance_type]) %>% 
+  ggplot(aes(x = foo , y = dd * 100)) + geom_line(aes(colour = insurance2)) +
+  ylab("Percentage point change relative to January 2013") + 
+  xlab("Months Since January 2013") + 
+  geom_vline(aes(xintercept = 13),lty=2) + 
+  xlim(c(0,36)) + 
+  annotate("text",x = 13.5,y = 4,label = "Primary Medicaid\nExpansion Date",hjust =0,cex = 3, family  = "Gill Sans") + 
+  geom_hline(aes(yintercept = 0)) + theme_tufte_revised() +
+  geom_hline(yintercept = c(-2,-1,1,2,3,4),colour = "lightgrey",lty=2) + 
+  scale_y_continuous(breaks = -2:4, labels = paste0(format(round(-2:4),nsmall=1)))
+
+p_final <- directlabels::direct.label(p,method=list("last.bumpup",fontfamily = "Gill Sans",cex = .8))  
+
+```

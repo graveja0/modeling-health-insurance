@@ -1,0 +1,81 @@
+---
+title: 'Ex Ante Policy Evaluation: Simulation Results'
+output:
+  pdf_document: default
+  html_notebook: default
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE
+)
+# Load packages and source functions. 
+source(here::here("R/manifest.R"))
+source(here::here("R/shared-objects.R"))
+```
+
+# Introduction
+
+This notebook contains code and model output for a simulation model of U.S. insurance markets.
+
+# Baseline Data
+
+Here, we want to define and estimate ex ante occupancy vectors and transition matrices.
+
+```{r,child="../R/01_simulation_construct-baseline.Rmd"}
+```
+
+## State Value Attributes
+
+We want to define a set of state values (e.g., gross cost of Medicaid, cost of uncompensated care, etc.) that will help determine various model outputs.
+
+# Modeling Policy Changes
+
+This section will provide well-identified evidence on key parameters for modeling coverage take-up decisions under futher Medicaid expansion, or based on private subsidies for health insurance.
+
+## Medicaid Expansions
+
+This section will draw on difference-in-difference evidence on coverage take-up probabilities as a function of state expansion status and state "dose."
+
+```{r, child="../R/01_simulation_fit-medicaid-DD.Rmd"}
+```
+
+## Private Insurance Subsidies
+
+This section will draw on coverage take-up probability estimates derived from the regression-discontinuity estimates in Finkelstein, Hendren and Shepard (2018). 
+
+## Results
+
+We will next output model results in terms of various welfare-relevant outputs
+
+- Coverage
+- Government costs
+
+# Comparative Welfare Analysis
+
+We next turn to comparative welfare analysis based on the marginal value of public funds. Need to separately estimate both the benefits and costs of Medicaid expansions and private insurance subsidies. 
+
+# Uncertainty and the Value of Information
+
+We'll now turn to probablistic sensitivity anlayses and VOI analyses based on the MVPF measures.
+
+## PSA
+
+- Can provide some scatterplots of coverage vs. mechanical costs, and costs/benefits with hypothetical $\lambda$ lines thrown in. 
+
+## VOI
+
+- Show VOI of model parameters based on a fn of $\lambda$. 
+
+
+
+
+
+
+
+

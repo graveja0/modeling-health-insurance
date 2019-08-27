@@ -1,0 +1,176 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r run-anaytic-functions}
+# source(here::here("R/manifest.R"))
+# source(here::here("R/shared-objects.R"))
+source(here::here("../../../box/sccs-r01/transitions-dd/R//prepare-multistate-data.R"))
+source(here::here("../../../box/sccs-r01/transitions-dd/R//fit-multistate-model.R"))
+source(here::here("../../../box/sccs-r01/transitions-dd/R//get-cumulative-hazard.R"))
+source(here::here("../../../box/sccs-r01/transitions-dd/R//add-binary-indicators.R"))
+source(here::here("../../../box/sccs-r01/transitions-dd/R//transitions-dd-model.R"))
+source(here::here("../../../box/sccs-r01/transitions-dd/R//ri-permute.R"))
+
+```
+
+
+```{r}
+run_dd_results = FALSE
+
+if (run_dd_results) {
+dd_lm <- 
+  df %>% 
+  fit_transitions_dd(outcome = insurance_type,
+                     id = idnumber,
+                     time = month,
+                     ff = as.formula( ~ post_expansion + expansion_state + post_expansion * expansion_state),
+                     ff_trans = as.formula( ~ post_expansion + expansion_state + baseline_insurance_type + 
+                                               post_expansion * baseline_insurance_type + post_expansion * expansion_state + 
+                                               expansion_state * baseline_insurance_type + 
+                                              post_expansion * expansion_state * baseline_insurance_type),
+                     term = "post_expansion:expansion_state"
+  )
+
+dd_lm_ri <- df %>%
+    ri_permute(m = 1000, 
+               treatment = expansion_state, 
+               cluster = state, 
+               idvar = idnumber,
+               outcome = insurance_type) %>% 
+    do(fit_transitions_dd(df = . ,
+                          outcome = insurance_type,
+                       id = idnumber,
+                       time = month,
+                       ff = as.formula( ~ post_expansion + expansion_state + post_expansion * expansion_state),
+                       ff_trans = as.formula( ~ post_expansion + expansion_state + baseline_insurance_type + 
+                                                 post_expansion * baseline_insurance_type + post_expansion * expansion_state + 
+                                                 expansion_state * baseline_insurance_type + 
+                                                post_expansion * expansion_state * baseline_insurance_type),
+                       term = "post_expansion:expansion_state"
+    ))
+
+  list(dd_lm = dd_lm, 
+       dd_lm_ri = dd_lm_ri)  %>% 
+    write_rds(here("output/dd-estimates/primary-results.rds"))
+}
+
+results <- 
+  read_rds(here("output/dd-estimates/primary-results.rds"))
+dd_lm <- results$dd_lm
+dd_lm_ri <- results$dd_lm_ri
+```
+
+
+```{r }
+## Ex Ante Shares
+ex_ante_shares <- 
+  dd_lm %>% 
+  filter(!is.na(ex_ante)) %>% 
+  select(ex_ante,starts_with("p_Z1_T0"), starts_with("p_Z0_T0")) %>% 
+  na.omit() %>% 
+  tbl_df() %>% 
+  mutate_at(vars(2:3),function(x) format(round(x,3),nsmall=3)) %>% 
+  mutate(test1 = "",test2="") %>% 
+  gather(key,value,-ex_ante,-p_Z1_T0,-p_Z0_T0) %>% 
+  arrange(ex_ante) %>% 
+  group_by(ex_ante) %>% 
+  mutate(n = row_number()) %>% 
+  mutate(treated = ifelse(n==1,p_Z1_T0,NA),
+         control = ifelse(n==1,p_Z0_T0,NA),
+         group = ifelse(n==1,insurance_lut[ex_ante],NA)) %>% 
+  ungroup() %>% 
+  select(group,treated,control)
+  
+# Marginal Model Result
+
+marginal_result_obs <- 
+  dd_lm %>% 
+  get_twoper_result()
+marginal_result_inf <- 
+  dd_lm_ri %>% 
+  group_by(replicate) %>% 
+  do(get_twoper_result(df = .)) 
+marginal_result <- 
+  marginal_result_obs %>% 
+  left_join(get_quantile_ranking(obs = marginal_result_obs, inf = marginal_result_inf),"group") %>% 
+  left_join(get_pvalue(obs = marginal_result_obs, inf = marginal_result_inf),"group")
+
+marginal_result_formatted <- 
+  marginal_result %>% 
+  select(group, a_marginal = value, b_p_value = p_value) %>% 
+  gather(row,value,-group) %>% 
+  arrange(group) %>% 
+  mutate(value = ifelse(grepl("^a_",row),format(round(value,4),nsmall=3),
+                        ifelse(value>0.01,paste0("(p=",format(round(value,2),nsmall=1),")"),
+                               paste0("(p< 0.01)")))) %>% 
+  mutate(group = ifelse(grepl("^a_",row),insurance_lut[group],"")) %>% 
+  select(group,marginal=value)
+
+
+# Pooled (Transition) Model Marginal Result
+pooled_marginal_result_obs <- 
+  dd_lm %>% 
+  do(get_marginal_estimates(df = .)) 
+pooled_marginal_result_inf <- 
+  dd_lm_ri %>% 
+  group_by(replicate) %>% 
+  do(get_marginal_estimates(df = .)) 
+pooled_marginal_result <- 
+  pooled_marginal_result_obs %>% 
+  left_join(get_quantile_ranking(obs = pooled_marginal_result_obs, inf = pooled_marginal_result_inf),"group") %>% 
+  left_join(get_pvalue(obs = pooled_marginal_result_obs, inf = pooled_marginal_result_inf),"group")
+ 
+pooled_marginal_result_formatted <- 
+  pooled_marginal_result %>% 
+  select(group, a_pooledl = value, b_p_value = p_value) %>% 
+  gather(row,value,-group) %>% 
+  arrange(group) %>% 
+  mutate(value = ifelse(grepl("^a_",row),format(round(value,4),nsmall=3),
+                        ifelse(value>0.01,paste0("(p=",format(round(value,2),nsmall=1),")"),
+                               paste0("(p< 0.01)")))) %>% 
+  mutate(group = ifelse(grepl("^a_",row),insurance_lut[group],"")) %>% 
+  select(group,pooled=value)
+
+# Transition Probability Matrix Result
+transprob_result_obs <- 
+  dd_lm %>% 
+  get_transprob_result() %>% 
+  unite(group,ex_ante,ex_post,sep = "_TO_")
+
+transprob_result_inf <- 
+  dd_lm_ri %>% 
+  group_by(replicate) %>% 
+  do(get_transprob_result(df=.) %>% 
+  unite(group,ex_ante,ex_post,sep = "_TO_")) 
+  
+transprob_result <- 
+  transprob_result_obs %>% 
+  left_join(get_quantile_ranking(obs = transprob_result_obs, inf = transprob_result_inf),"group") %>% 
+  left_join(get_pvalue(obs = transprob_result_obs, inf = transprob_result_inf),"group")
+
+transprob_result_formatted <-
+ transprob_result %>% 
+  select(group, a_transprobl = value, b_p_value = p_value) %>% 
+  gather(row,value,-group) %>% 
+  arrange(group) %>% 
+  mutate(value = ifelse(grepl("^a_",row),format(round(value,4),nsmall=3),
+                        ifelse(value>0.01,paste0("(p=",format(round(value,2),nsmall=1),")"),
+                               paste0("(p< 0.01)")))) %>% 
+   separate(group,into = c("ex_ante","ex_post"),sep = "_TO_") %>% 
+   spread(ex_post,value) %>% 
+  mutate(ex_ante = ifelse(grepl("^a_",row),insurance_lut[ex_ante],"")) %>% 
+  select(-row) %>% 
+   set_colnames(c("group",insurance_lut))
+
+
+```
+
+```{r}
+tmp <- ex_ante_shares %>% 
+  cbind(transprob_result_formatted[,-1]) 
+
+tmp %>% kable()
+```
+
