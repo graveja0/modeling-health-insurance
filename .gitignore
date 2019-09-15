@@ -14,3 +14,7 @@ output/
 R/*.html
 presentations/
 figures/
+docs/
+*_files
+*conflicted*
+*.docx
