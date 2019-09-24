@@ -25,6 +25,7 @@ conflict_prefer("set_names", "rlang")
 conflict_prefer("lag", "dplyr")
 conflict_prefer("set_names","rlang")
 conflict_prefer("filter","dplyr")
+conflict_prefer("count","dplyr")
 
 source(here::here("R/prepare-multistate-data.R"))
 source(here::here("R/fit-multistate-model.R"))

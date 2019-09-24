@@ -104,36 +104,6 @@ fn_uncomp <- function(cost, uninsured_oop_share , phi ) {
 }
 
 
-simulate_subsidy <- function(params) {
-  takeup <- get_takeup(params, premium = params$plan_premium)
-  takeup_deriv = 1/(get_takeup(params, premium = params$plan_premium+1) - get_takeup(params, premium =  params$plan_premium))
-  cost_reformed <- get_cost(params, premium = params$plan_premium)
-  uncomp = fn_uncomp(cost = cost_reformed, uninsured_oop_share = params$uninsured_oop_share, phi = params$phi)
-  
-  mvpf_num = takeup + 
-    params$eta * 
-    (
-      pmax(0,uncomp) / 
-        (-1 * takeup_deriv)
-    ) 
-  mvpf_denom = takeup + 
-    ((pmax(0,cost_reformed - params$gov_incidence * uncomp - params$plan_premium)) / 
-       (-1 * takeup_deriv)) 
-  mvpf = mvpf_num / mvpf_denom
-  
-  
-  output <- list(
-    takeup = takeup, 
-    takeup_deriv = takeup_deriv, 
-    cost_reformed = cost_reformed,
-    uncomp = uncomp, 
-    mvpf_num = mvpf_num,
-    mvpf_denom = mvpf_denom, 
-    mvpf = mvpf
-  )
-  return(output)
-}
-
 
 
 TwoWaySA<-function(indata,outcome="NHB",parm1,parm2,range1,range2,lambda){
@@ -318,7 +288,7 @@ OneWaySA<-function(indata,outcome="NHB",lambda,parm,range){
   txtsize<-12 #Text size for the graphs
   ggplot(data = plotdata, aes(x = parm, y = values, lty = ind)) +
     geom_line() +
-    ggtitle("One-way sensitivity analysis \n Net Health Benefit") + 
+    #ggtitle("One-way sensitivity analysis \n Net Health Benefit") + 
     xlab(parm) +
     ylab("E[NHB]") +
     scale_colour_hue("Strategy", l=50) +
@@ -391,10 +361,10 @@ CEAC<-function(lambda_range,indata){
   p <- ggplot(data = CEAC, aes(x = lambda, y = value, color = variable)) +
     geom_point() +
     geom_line() +
-    ggtitle("Cost-Effectiveness Acceptability Curves") + 
+    #ggtitle("Cost-Effectiveness Acceptability Curves") + 
     scale_colour_hue("Strategies: ",l=50) +
     #scale_x_continuous(breaks=number_ticks(6))+
-    xlab(expression("Willingness to Adopt "(lambda))) +
+    xlab(expression("Policy Adoption Threshold "(lambda))) +
     ylab("Pr Cost-Effective") +
     theme_bw() +
     theme(legend.position="bottom",legend.title=element_text(size = txtsize),
@@ -680,49 +650,6 @@ Predict.matrix.tensor.smooth.ga <- function (object,
 
 ## For Simulating Medicaid
 
-calculate_wtp_public <- function(params) {
-  
-  #The net cost of Medicaid equals the average increase in medical spending due to Medicaid
-  # plus the average decrease in out-of-pocket spenigndue to Medicaid (see equation 22). 
-  p_1 <- params$OOP_Tx / params$G
-  
-  p_0 <- params$OOP_Cx / params$G_Cx
-  
-  MCD_SPEND = params$G - params$G_Cx
-  
-  C  = MCD_SPEND + params$OOP_Cx
-  
-  # The monetary transfer from Medicaid to external parties, N, is the difference between G and C.
-  N <- params$G - C
-  
-  # We estimate the transfer component and pure-insurance component separately, and combine them
-  # for our estimate of \gamma(1).
-  
-  # Transfer component (p.29)
-  # using a linear approximation and the estimates of E[m(0,\theta)] and E[m(1,\theta)]
-  Tr <- (p_0-p_1)*(0.5 * (params$G_Cx +  params$G))
-  
-  net_cost_as_frac_gross <- C / params$G  
-  moral_hazard_cost <- params$G - Tr - N
-  
-  wtp <- Tr + params$I 
-  
-  mvpf_gov <- wtp / C
-  mvpf_indiv <- (wtp + params$G * params$eta * (N / params$G)) / params$G
-  
-  mvpf_num_gov <- wtp 
-  mvpf_denom_gov <- C
-  mvpf_num_indiv <- (wtp + params$G * params$eta * (N / params$G))
-  mvpf_denom_indiv <- params$G
-  
-  mvpf_num <- params$gov_incidence * mvpf_num_gov + (1 - params$gov_incidence) * mvpf_num_indiv 
-  mvpf_denom <- params$gov_incidence * mvpf_denom_gov  + (1 - params$gov_incidence) * mvpf_denom_indiv
-  
-  mvpf <- mvpf_num / mvpf_denom
-  
-  out <- list(mvpf = mvpf  , mvpf_num = (mvpf_num / 12)/100 , mvpf_denom = (mvpf_denom / 12)/100, wtp = wtp , cost = C  , N = N)
-  return(out)
-}
 
 
 cov_sim <- function(params) {
@@ -774,5 +701,125 @@ cov_sim <- function(params) {
   
   return(out)
 }
+
+calculate_wtp_public <- function(params, scaling_factor = 1) {
+  
+  #The net cost of Medicaid equals the average increase in medical spending due to Medicaid
+  # plus the average decrease in out-of-pocket spenigndue to Medicaid (see equation 22). 
+  p_1 <- params$OOP_Tx / params$G
+  
+  p_0 <- params$OOP_Cx / params$G_Cx
+  
+  MCD_SPEND = params$G - params$G_Cx
+  
+  C  = MCD_SPEND + params$OOP_Cx
+  
+  # The monetary transfer from Medicaid to external parties, N, is the difference between G and C.
+  N <- params$G - C
+  
+  welfare_weight <- params$v_i / params$v_j
+  
+  # We estimate the transfer component and pure-insurance component separately, and combine them
+  # for our estimate of \gamma(1).
+  
+  # Transfer component (p.29)
+  # using a linear approximation and the estimates of E[m(0,\theta)] and E[m(1,\theta)]
+  Tr <- (p_0-p_1)*(0.5 * (params$G_Cx +  params$G))
+  
+  net_cost_as_frac_gross <- C / params$G  
+  moral_hazard_cost <- params$G - Tr - N
+  
+  # wtp <- Tr + params$I 
+  # 
+  # mvpf_gov <- wtp / C
+  # mvpf_indiv <- (wtp + params$G * welfare_weight * (N / params$G)) / params$G
+  # 
+  # mvpf_num_gov <- wtp 
+  # mvpf_denom_gov <- C
+  # mvpf_num_indiv <- (wtp + params$G * welfare_weight * (N / params$G))
+  # mvpf_denom_indiv <- params$G
+  # 
+  # mvpf_num <- params$gov_incidence * mvpf_num_gov + (1 - params$gov_incidence) * mvpf_num_indiv 
+  # mvpf_denom <- params$gov_incidence * mvpf_denom_gov  + (1 - params$gov_incidence) * mvpf_denom_indiv
+  # 
+  # mvpf <- mvpf_num / mvpf_denom
+  #out <- list(mvpf = mvpf  , mvpf_num = (mvpf_num / 12)/100 , mvpf_denom = (mvpf_denom / 12)/100, wtp = wtp , cost = C  , N = N)
+  
+  ######################################################
+  # Scale all relevant values by government cost of 
+  # Medicaid so it can be measured in terms of a single 
+  # dollar spent on Medicaid. 
+  ######################################################
+  scaling_factor = C
+  
+  wtp <- Tr + params$I + params$fudge
+  
+  mvpf_gov <- (wtp/scaling_factor ) / (C/scaling_factor )
+  mvpf_indiv <- (wtp/scaling_factor  + params$G/scaling_factor  * welfare_weight * (N / params$G)) / (params$G/scaling_factor )
+  
+  mvpf_num_gov <- wtp / scaling_factor 
+  mvpf_denom_gov <- C /scaling_factor 
+  mvpf_num_indiv <- (wtp/scaling_factor  + params$G/scaling_factor  * welfare_weight * (N / params$G))
+  mvpf_denom_indiv <- params$G/scaling_factor 
+  
+  mvpf_num <- params$gov_incidence * mvpf_num_gov + (1 - params$gov_incidence) * mvpf_num_indiv 
+  mvpf_denom <- params$gov_incidence * mvpf_denom_gov  + (1 - params$gov_incidence) * mvpf_denom_indiv
+  
+  mvpf <- mvpf_num / mvpf_denom
+  
+  out <- list(mvpf = mvpf  , mvpf_num = mvpf_num  , mvpf_denom = mvpf_denom, wtp = wtp , cost = C  , N = N)
+  return(out)
+}
+
+
+simulate_subsidy <- function(params) {
+  takeup <- get_takeup(params, premium = params$plan_premium)
+  # takeup_deriv = 1/(get_takeup(params, premium = params$plan_premium+1) - get_takeup(params, premium =  params$plan_premium))
+  # cost_reformed <- get_cost(params, premium = params$plan_premium)
+  # uncomp = fn_uncomp(cost = cost_reformed, uninsured_oop_share = params$uninsured_oop_share, phi = params$phi)
+  # 
+  # mvpf_num = takeup + 
+  #   params$eta * 
+  #   (
+  #     pmax(0,uncomp) / 
+  #       (-1 * takeup_deriv)
+  #   ) 
+  # mvpf_denom = takeup + 
+  #   ((pmax(0,cost_reformed - params$gov_incidence * uncomp - params$plan_premium)) / 
+  #      (-1 * takeup_deriv)) 
+  # mvpf = mvpf_num / mvpf_denom
+  # 
+  
+  
+  # Alternative Version
+  s_star <- get_takeup(params, premium = params$plan_premium)
+  ds_dpH <- get_takeup(params, premium = params$plan_premium)-get_takeup(params, premium = params$plan_premium+1)
+  C_H <- get_cost(params, premium = params$plan_premium)
+  p_H <- params$plan_premium
+  uncomp = fn_uncomp(cost = C_H, uninsured_oop_share = params$uninsured_oop_share, phi = params$phi)
+  
+  welfare_weight <- params$v_i / params$v_j
+  
+  mvpf_num <-  s_star + welfare_weight * uncomp * ds_dpH
+  
+  cost_of_new_enrollees <- ds_dpH * (C_H - params$gov_incidence * uncomp - p_H) 
+  mvpf_denom <- s_star  + cost_of_new_enrollees
+  
+  mvpf<- mvpf_num / mvpf_denom
+  
+  
+  output <- list(
+    takeup = takeup, 
+    # takeup_deriv = takeup_deriv, 
+    C_H = C_H,
+    uncomp = uncomp, 
+    mvpf_num = mvpf_num,
+    mvpf_denom = mvpf_denom, 
+    mvpf = mvpf
+  )
+  return(output)
+}
+
+
 
 
