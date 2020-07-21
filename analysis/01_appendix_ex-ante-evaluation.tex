@@ -1,0 +1,300 @@
+\PassOptionsToPackage{unicode=true}{hyperref} % options for packages loaded elsewhere
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames*,x11names*}{xcolor}
+%
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provides euro and other symbols
+\else % if luatex or xelatex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage[]{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+            pdftitle={A Unified Approach for Ex Ante Policy Evaluation},
+            pdfauthor={John Graves, Vanderbilt University},
+            colorlinks=true,
+            linkcolor=Maroon,
+            filecolor=Maroon,
+            citecolor=Blue,
+            urlcolor=blue,
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+% set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+
+\usepackage{setspace}
+\doublespacing
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+
+\title{A Unified Approach for Ex Ante Policy Evaluation}
+\providecommand{\subtitle}[1]{}
+\subtitle{Supplemental Materials}
+\author{John Graves, Vanderbilt University}
+\date{}
+
+\begin{document}
+\maketitle
+
+\hypertarget{discrete-choice-model}{%
+\section{Discrete Choice Model}\label{discrete-choice-model}}
+
+This section describes the structure, assumptions and calibration of a
+discrete time and choice model of U.S. health insurance coverage.
+
+To begin, consider a model of insurance choice among \(J\) alternatives
+(including the choice not to insure). Define \(U_{itj}\) as the utility
+for choice unit \(i\) from selecting choice \(j\) at time \(t\).
+
+\[
+U_{itj} = V(\mathbf{x_{itj}}, \mathbf{z_i})+ \epsilon_{ij}
+\] \noindent where \(\mathbf{x_{itj}}\) is a vector of time-varying
+attributes of the \(J\) choices and the health insurance unit (HIU), or
+the collection of related family members who could enroll under the same
+plan. Utility also depends on fixed attributes of the HIU
+(\(\mathbf{z_i}\)), and an unobservable component \(\epsilon_{itj}\).
+
+For HIU \(i\), the choice of insurance \(y_{it}\) is based on maximizing
+utility across the \(J\) alternatives at time \(t\):
+
+\[
+y_{it} = {\arg \max}_j [U_{itj}, j = 1, \dots, J]
+\]
+
+We next define a function \(B(\cdot)\) mapping utility from choice \(j\)
+to \(r_{ij} = P(y_{it} = j)\), the probability of individual \(i\)
+selecting choice \(j\). If the error terms \(\epsilon_{ij}\) are
+independent across units and are distributed Type I Extreme Value, we
+get a standard conditional logit for \(B(\cdot)\). However, other link
+functions---such as based on a nested logit or multinomial logit
+model---could also be used.
+
+\hypertarget{from-utility-to-probability-linkages-to-common-microsimulation-approaches}{%
+\section{From Utility to Probability: Linkages to Common Microsimulation
+Approaches}\label{from-utility-to-probability-linkages-to-common-microsimulation-approaches}}
+
+The specification of choice probabilities via a link function to an
+underlying utility maximization model is the theoretical chassis for
+most major microsimulation models of the U.S. health care system. This
+includes models used by the Congressional Budget Office (CB), the RAND
+Corporation, and the Urban Institute, among others.
+
+For example, the CBO model utilizes a similar underlying utility
+equation:
+
+\[
+U_{ij} = \beta_1 V_{ij} + \epsilon_{ij}
+\] \noindent where the paramter \(\beta\) rescales utility into dollar
+terms. In the CBO model, the systematic component of utility (i.e.,
+\(V_{ij}\)) is modeled using microdata on individuals and simulated
+employer choices to offer insurance.
+
+\includegraphics[width=0.9\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/./figures/01_cbo-utility-plain}
+
+The CBO model similarly defines a link function \(B(\cdot)\) converting
+utility to choice probabilities based a on nested logit in which
+individuals first select the \emph{type} of insurance they will have
+(e.g., employer, non-group, public, or uninsured) and then conditional
+on that choice, select among plans within that type.
+
+In addition to sharing a common ``DNA'' with major microsimulation
+models, another nice feature of the discrete choice model structure
+outlined above is that it also maps directly into a reduced form
+modeling structure. Under this structure, changes in choice
+probabilities are modeled using microdata on individuals by applying
+reduced form literature-based elasticity estimates to simulated changes
+in price. This ``reduced-form'' or ``elasticity-based'' approach to
+microsimulation of U.S. health reform was previously used by the CBO
+(prior to 2019) and in other major microsimulation models.
+
+\hypertarget{insurance-choice-as-a-markov-process}{%
+\section{Insurance Choice as a Markov
+Process}\label{insurance-choice-as-a-markov-process}}
+
+As discussed in the introduction to this study, a major downside to
+common approaches to microsimulation is that they require considerable h
+
+To address this shortcoming, we next take the utility maximization model
+developed above and map it into a ``sufficient statistics'' approach to
+modeling changes to U.S. health insurance policy. In so doing we can
+summarize policy changes in terms of a minimal set of parameters.
+
+To do so we first recognize that the insurance choice process at two
+time periods can be summarized in terms of a Markov trace. First, define
+the \emph{ex ante occupancy vector} \(\mathbf{\tilde p}\) summarizing
+the count or fraction of the population at baseline.
+
+\begin{itemize}
+\item
+  Also define a transition probability matrix
+  \(\mathbf{R_i} = [r_{irs}]\).
+
+  \begin{itemize}
+  \item
+    Cells in this \(J \times J\) matrix defined by transition
+    probabilities: \(r_{irs} = P(y_{it} = s | y_{i,t-1}=r)\)
+  \item
+    At a population level (with size \(N\)) define
+    \(\mathbf{R} = [r_{rs}]\) where \(r_{rs} = \sum_{i=1}^Nr_{irs}/N\).
+  \end{itemize}
+\item
+  \(\mathbf{p}\), the distribution of coverage at time \(t\), is given
+  by \(\mathbf{\tilde{p}'R}\).
+\end{itemize}
+
+\hypertarget{development-and-calibration-of-policy-simulation-model}{%
+\section{Development and Calibration of Policy Simulation
+Model}\label{development-and-calibration-of-policy-simulation-model}}
+
+The basis for the simulation model is longitudianl data on insurance
+choice from the 2014 Survey of Income and Program Participation (SIPP)
+calibrated to American Community Survey (ACS) on insurance coverage from
+2015 to 2018.
+
+\includegraphics[width=0.9\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/figures/99_transprob-results}
+
+\includegraphics[width=0.9\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/figures/99_dd-results}
+
+\begin{verbatim}
+## # A tibble: 8 x 6
+## # Groups:   non_expansion_state [2]
+##   non_expansion_state coverage_type `2015` `2016` `2017` `2018`
+##                 <int> <chr>          <dbl>  <dbl>  <dbl>  <dbl>
+## 1                   0 01_esi_own    0.633  0.638  0.644  0.650 
+## 2                   0 02_priv_oth   0.0854 0.0856 0.0809 0.0772
+## 3                   0 03_public     0.180  0.186  0.185  0.182 
+## 4                   0 04_uninsured  0.102  0.0896 0.0895 0.0909
+## 5                   1 01_esi_own    0.608  0.615  0.620  0.623 
+## 6                   1 02_priv_oth   0.102  0.103  0.0936 0.0894
+## 7                   1 03_public     0.110  0.112  0.111  0.110 
+## 8                   1 04_uninsured  0.180  0.170  0.175  0.177
+\end{verbatim}
+
+\begin{verbatim}
+## Warning in min(rows_matched): no non-missing arguments to min; returning Inf
+\end{verbatim}
+
+\begin{verbatim}
+## Warning in max(rows_matched): no non-missing arguments to max; returning -Inf
+\end{verbatim}
+
+\includegraphics{01_appendix_ex-ante-evaluation_files/figure-latex/unnamed-chunk-6-1.png}
+
+\begin{verbatim}
+## Warning: `cols` is now required.
+## Please use `cols = c(p)`
+
+## Warning: `cols` is now required.
+## Please use `cols = c(p)`
+
+## Warning: `cols` is now required.
+## Please use `cols = c(p)`
+\end{verbatim}
+
+\begin{verbatim}
+## Warning in min(rows_matched): no non-missing arguments to min; returning Inf
+\end{verbatim}
+
+\begin{verbatim}
+## Warning in max(rows_matched): no non-missing arguments to max; returning -Inf
+\end{verbatim}
+
+\includegraphics{01_appendix_ex-ante-evaluation_files/figure-latex/unnamed-chunk-7-1.png}
+
+\includegraphics{01_appendix_ex-ante-evaluation_files/figure-latex/unnamed-chunk-8-1.png}
+\includegraphics{01_appendix_ex-ante-evaluation_files/figure-latex/unnamed-chunk-8-2.png}
+
+\begin{verbatim}
+## Warning in bind_rows_(x, .id): binding character and factor vector, coercing
+## into character vector
+
+## Warning in bind_rows_(x, .id): binding character and factor vector, coercing
+## into character vector
+
+## Warning in bind_rows_(x, .id): binding character and factor vector, coercing
+## into character vector
+\end{verbatim}
+
+\includegraphics{01_appendix_ex-ante-evaluation_files/figure-latex/unnamed-chunk-8-3.png}
+
+\begin{verbatim}
+## Warning: Expected 4 pieces. Missing pieces filled with `NA` in 8 rows [3, 4, 7,
+## 8, 11, 12, 13, 14].
+\end{verbatim}
+
+\begin{verbatim}
+## Warning in min(rows_matched): no non-missing arguments to min; returning Inf
+\end{verbatim}
+
+\begin{verbatim}
+## Warning in max(rows_matched): no non-missing arguments to max; returning -Inf
+\end{verbatim}
+
+\includegraphics{01_appendix_ex-ante-evaluation_files/figure-latex/unnamed-chunk-9-1.png}
+
+\end{document}

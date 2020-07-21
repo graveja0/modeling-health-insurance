@@ -1,35 +1,56 @@
-state_xw <- read.csv(here::here("input/state_xwalk.csv"))
+other_expansion_dates <- 
+  c("AK" = lubridate::as_date(zoo::as.yearmon("09/2014","%m/%Y")),
+    "IN" = lubridate::as_date(zoo::as.yearmon("02/2015","%m/%Y")),
+    "MI" = lubridate::as_date(zoo::as.yearmon("04/2014","%m/%Y")),
+    "MT" = lubridate::as_date(zoo::as.yearmon("01/2016","%m/%Y")),
+    "NH" = lubridate::as_date(zoo::as.yearmon("08/2014","%m/%Y")),
+    "PA" = lubridate::as_date(zoo::as.yearmon("01/2015","%m/%Y")),
+    "CA" = lubridate::as_date(zoo::as.yearmon("01/2010","%m/%Y")),
+    "CT" = lubridate::as_date(zoo::as.yearmon("01/2010","%m/%Y")),
+    "HI" = lubridate::as_date(zoo::as.yearmon("01/1994","%m/%Y")),
+    "MN" = lubridate::as_date(zoo::as.yearmon("01/2010","%m/%Y")),
+    "WI" = lubridate::as_date(zoo::as.yearmon("01/2009","%m/%Y")),
+    "DE" = lubridate::as_date(zoo::as.yearmon("01/1996","%m/%Y")),
+    "DC" = lubridate::as_date(zoo::as.yearmon("01/2010","%m/%Y")),
+    "MA" = lubridate::as_date(zoo::as.yearmon("01/2006","%m/%Y")),
+    "NY" = lubridate::as_date(zoo::as.yearmon("01/2001","%m/%Y")),
+    "VT" = lubridate::as_date(zoo::as.yearmon("01/1996","%m/%Y")),
+    "LA" = lubridate::as_date(zoo::as.yearmon("01/2016","%m/%Y")))
+
+
+
+state_xw <- read.csv(here::here("../../../box/sccs-r01/transitions-dd/input/state_xwalk.csv")) %>% 
+  mutate(full_expansion_state = as.integer(
+    state %in%   c("AK","AZ","AR","CO","IL","IN","KY",
+                   "MD","MI","MT","NV","NH","NJ","NM",
+                   "ND","OH","OR","PA","RI","WA","WV")
+  ), 
+  substantial_expansion_state = as.integer(
+    state %in% c("CA","CT","HI","MN","WI") 
+  ),
+  mild_expansion_state = as.integer(
+    state %in% c("DE","DC","MA","NY","VT")
+  ),
+  non_expansion_state = as.integer(
+    state %in% c("AL","GA","FL","ID","KS","LA","ME",
+                 "MS","MO","NE","NC","OK","SC","SD",
+                 "TN","TX","UT","VA","WY")
+  )) %>% 
+  mutate(expansion_date = ifelse(non_expansion_state ==0 , 
+                                 lubridate::as_date(zoo::as.yearmon("01/2014","%m/%Y")),
+                                 NA)) %>% 
+  mutate(expansion_date = ifelse(state %in% names(other_expansion_dates), 
+                                 other_expansion_dates[as.character(state)],expansion_date)) %>% 
+  mutate(expansion_date = lubridate::as_date(expansion_date)) %>% 
+  mutate(expansion_year = lubridate::year(expansion_date))
+
 df_sipp_full <-
   #data.table::fread("./data/sipp/sip_waves_one_two.csv") %>%
-  data.table::fread(here::here("data/sipp/sip_waves_one_two (1).csv")) %>% 
+  #data.table::fread(here::here("data/sipp/sip_waves_one_two (1).csv")) %>% 
+  data.table::fread("./data/sipp/sip_waves_one_two_three_v2.csv") %>% 
   janitor::clean_names() %>% tbl_df()  %>% 
   rename(fips = tehc_st) %>% 
   inner_join(state_xw,"fips") %>% 
-  mutate(expansion_state = 1 - as.integer(
-    # Note these need to be nonexpansion states as of *2015*
-    state %in% c(
-      "TN",
-      "WY",
-      "SD",
-      "WI",
-      "TX",
-      "KS",
-      "OK",
-      "MO",
-      "MS",
-      "AL",
-      "GA",
-      "FL",
-      "SC",
-      "NC",
-      "ID",
-      "UT",
-      "VA",
-      "LA",
-      "AK",
-      "ME","NE","WY"
-    )
-  )) %>% 
   mutate(himth = as.integer(rhimth==1 | rcdmth ==1 | ecrmth ==1),
          privhimth = as.integer(rhimth == 1),
          medcarmth = as.integer(ecrmth == 1),
@@ -44,26 +65,17 @@ df_sipp_full <-
          both_cov = as.integer(rhiowner==3))  %>% #  plan, someone else's, both or neither. 
   mutate(ownboth = as.integer(own_cov==1 | both_cov==1)) %>% 
   mutate(re_ephi = as.integer(ephi_t==1 & ownboth==1)) %>% 
-  mutate(hicov = 
-           ifelse((ephi_t == 1 | milmth==1) & own_cov==1,1,
-                  ifelse((ephi_t ==1 | milmth==1) & own_cov==0,1,
-                         ifelse(privhimth==1,2,
-                                ifelse(medcaidmth==1 | medcarmth==1,3,
-                                       ifelse(rhimth==2,4,-9)))))) %>% 
-  mutate(hicov3 = 
-           ifelse(hicov %in% 1:2,1, 
-                  ifelse(hicov==3, 2, 
-                         ifelse(hicov==4,3, NA)))) %>% 
-  group_by(ssuid,pnum,monthcode) %>% 
-  mutate(year_in_survey = row_number())  %>% 
+  mutate(year_in_survey = swave)  %>% 
   mutate(id = paste0(ssuid,"-",pnum)) %>% 
   mutate(sex = as.factor(esex),
          race = as.factor(erace),
          state = as.factor(state),
-         age = tage) %>%
-  ungroup()
+         age = tage) %>% 
+  mutate(inc_pov = pmin(50,pmax(0,tftotinc / rfpov)))
 
-write_rds(df_sipp_full, path = here("input/sipp/01_sipp-tidy_v1-0.rds"))
+#write_rds(df_sipp_full, path = here("input/sipp/01_sipp-tidy_v1-0.rds"))
+write_rds(df_sipp_full, path = here("input/sipp/01_sipp-tidy_v2-0.rds"))
+
 
 set.seed(123) 
 sample_ids <- df_sipp_full %>% 
@@ -75,4 +87,5 @@ sample_ids <- df_sipp_full %>%
 df_sipp_full_sample <- 
   df_sipp_full %>% filter(id %in% sample_ids)
 
-write_rds(df_sipp_full_sample, path = here("input/sipp/01_sample_sipp-tidy_v1-0.rds"))
+#write_rds(df_sipp_full_sample, path = here("input/sipp/01_sample_sipp-tidy_v1-0.rds"))
+write_rds(df_sipp_full_sample, path = here("input/sipp/01_sample_sipp-tidy_v2-0.rds"))

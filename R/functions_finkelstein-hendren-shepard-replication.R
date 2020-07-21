@@ -148,7 +148,8 @@ get_WTP <- function(coef,
   foo <- 
     demand_est %>% 
     group_by(fpl_group) %>% 
-    nest(.key = demand_L_est) %>% 
+    nest() %>% 
+    rename(demand_L_est = data) %>% 
     mutate(demand_L_ext = 
              map(demand_L_est,~(
                data.frame(s = seq(0,1,0.01),
@@ -160,7 +161,7 @@ get_WTP <- function(coef,
              map(demand_L_ext,
                  ~(approxfun(.x$s,.x$price)))) %>% 
     left_join(
-      demand_est_H %>% group_by(fpl_group) %>% nest(.key = demand_HL_est),
+      demand_est_H %>% group_by(fpl_group) %>% nest() %>% rename(demand_HL_est = data),
       "fpl_group"
     ) %>% 
     mutate(demand_H_est = 
@@ -176,6 +177,7 @@ get_WTP <- function(coef,
                  mutate(price = pmax(0,price)) %>% 
                  tbl_df()
              ))) %>% 
+    ungroup() %>% 
     mutate(fpl_group = gsub("demand","fpl",fpl_group))
   
   
@@ -279,7 +281,8 @@ get_cost <- function(coef_cost, coef_D) {
   foo <- 
     cost_est %>% 
     group_by(fpl_group) %>% 
-    nest(.key = avg_cost_H_est) %>% 
+    nest() %>% 
+    rename( avg_cost_H_est = data) %>% 
     mutate(cost_H_est = map(avg_cost_H_est,~(
       .x %>% tbl_df() %>% 
         mutate(share2 = (share + lead(share))/2) %>% 

@@ -1,0 +1,276 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames*,x11names*}{xcolor}
+%
+\documentclass[
+  10pt,
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Supplemental Appendix: A Unified Approach for Ex Ante Policy Evaluation},
+  pdfauthor={John Graves, Vanderbilt University},
+  colorlinks=true,
+  linkcolor=Maroon,
+  filecolor=Maroon,
+  citecolor=Blue,
+  urlcolor=blue,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+\usepackage{setspace}
+\doublespacing
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+
+\title{Supplemental Appendix: A Unified Approach for Ex Ante Policy Evaluation}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{Evaluating Mechanisms for Universal Health Coverage}
+\author{John Graves, Vanderbilt University}
+\date{}
+
+\begin{document}
+\maketitle
+
+\centering
+\raggedright
+
+\hypertarget{modeling-coverage-changes}{%
+\section{Modeling Coverage Changes}\label{modeling-coverage-changes}}
+
+Recall from the main text that the impact of a modeled reform on
+coverage is summarized as
+
+\begin{equation}
+\label{eq:takeup_potout}
+  \boldsymbol{\theta} = \boldsymbol{p(1)} -  \boldsymbol{p(0)} 
+  = \boldsymbol{\tilde{p}'R(1)} - \boldsymbol{\tilde{p}'R(0)}
+\end{equation}
+
+\noindent where \(\boldsymbol{\tilde p}\) is the \emph{ex ante occupancy
+vector} summarizing the count or fraction of the population in each
+coverage category at time \(t-1\) (i.e., at baseline). The transition
+probability matrix is defined as \(\boldsymbol{R_i} = [r_{irs}]\). Cells
+in this \(J \times J\) matrix are defined by transition probabilities
+among the \(J\) possible coverage categories based on conditional choice
+probabilities: \(r_{irs} = P(y_{it} = s | y_{i,t-1}=r)\).
+
+\hypertarget{estimating-boldsymboltilde-p}{%
+\subsection{\texorpdfstring{Estimating
+\(\boldsymbol{\tilde p}\)}{Estimating \textbackslash boldsymbol\{\textbackslash tilde p\}}}\label{estimating-boldsymboltilde-p}}
+
+The ex ante occupany vector simply summarizes the fraction or count of
+the target population in each coverage category at baseline. We can
+therefore appeal to survey samples to obtain estimates. In our results
+we estimate \(\boldsymbol{\tilde p}\) based on the 2014 panel of the
+Survey of Income and Program Participation (SIPP). The SIPP provides us
+with a baseline distribution of coverage in 2015---one year after the
+Affordable Care Act's (ACA) major coverage reforms went into place.
+
+\hypertarget{estimating-and-calibrating-boldsymbolr0}{%
+\subsection{\texorpdfstring{Estimating and Calibrating
+\(\boldsymbol{R(0)}\)}{Estimating and Calibrating \textbackslash boldsymbol\{R(0)\}}}\label{estimating-and-calibrating-boldsymbolr0}}
+
+We begin by first specifying a process for estimating and then
+calibrating the baseline transition probability matrix
+\(\boldsymbol{R(0)}\) to match observed population totals on the
+evolution distribution of coverage over time.
+
+\begin{itemize}
+\tightlist
+\item
+  Basis is 2014 SIPP
+\item
+  Use SIPPP to non-parameterically estimate transiton hazards among
+  coverage types. Basis for this is a multi-state model as outlined in
+  Graves and Nikpay (2017)
+\end{itemize}
+
+\[
+\boldsymbol{R}(0) = 
+\begin{pmatrix}
+0.881 & 0.005 & 0.05 & 0.065 \\
+0.151 & 0.665 & 0.126 & 0.058 \\
+0.145 & 0.059 & 0.503 & 0.293 \\
+0.294 & 0.163 & 0.295 & 0.249 \\
+\end{pmatrix}
+\]
+
+\begin{figure}
+\includegraphics[width=1\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/./figures/01-posterior-distribution} \caption{\label{posterior_calib}Posterior Distribution of Calibrated Transition Probabilities}\label{fig:unnamed-chunk-4}
+\end{figure}
+
+\begin{figure}
+\includegraphics[width=1\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/./figures/01-calibration-base-model} \caption{\label{posterior_calib}Calibration Plot for Distribution of Insurance Coverage by Year}\label{fig:unnamed-chunk-5}
+\end{figure}
+
+\hypertarget{modeling-boldsymbolr1-link-to-cbo-and-other-microsimulation-models}{%
+\subsection{\texorpdfstring{Modeling \(\boldsymbol{R(1)}\): Link to CBO
+and Other Microsimulation
+Models}{Modeling \textbackslash boldsymbol\{R(1)\}: Link to CBO and Other Microsimulation Models}}\label{modeling-boldsymbolr1-link-to-cbo-and-other-microsimulation-models}}
+
+Estimation or modeling of the transition probabilities can be
+accomplished several ways: by estimating or deriving them via
+literature-based reduced form evidence, or by modeling them directly
+using microsimulation. While our application relies on the reduced-form
+approach, we will first discuss briefly how this can be accomplished in
+a microsimulation model here.
+
+A standard assumption is that an exogenous policy change does not affect
+the unobserved disturbance term \(\epsilon_{itj}\) in the underlying
+discrete choice formulation:
+
+\begin{equation}
+\label{eq:utility_1}
+U_{itj} = V(\mathbf{x_{itj}}, \mathbf{z_i})+ \epsilon_{itj}
+\end{equation}
+
+\noindent where \(\mathbf{x_{itj}}\) is a vector of time-varying
+attributes of the \(J\) choices and the health insurance unit (HIU), or
+the collection of related family members who could enroll under the same
+plan. Utility also depends on fixed attributes of the HIU
+(\(\mathbf{z_i}\)), and an unobservable component \(\epsilon_{itj}\). A
+function \(B(\cdot)\) maps utility from choice \(j\) to
+\(r_{ij} = P(y_{it} = j)\), the probability of individual \(i\)
+selecting choice \(j\).
+
+The specification of choice probabilities via a link function to an
+underlying utility maximization model is the theoretical chassis for
+most major microsimulation models of the U.S. health care system. This
+includes models used by the Congressional Budget Office (CB), the RAND
+Corporation, and the Urban Institute, among others.
+
+For example, the CBO model utilizes a similar underlying utility
+equation:
+
+\begin{equation}
+\label{eq:utility_cbo}
+U_{ij} = \beta_1 V_{ij} + \epsilon_{ij}
+\end{equation}
+
+\noindent where the parameter \(\beta\) rescales utility into dollar
+terms.
+
+The CBO health reform model similarly defines a link function
+\(B(\cdot)\) converting utility to choice probabilities based a on
+nested logit in which individuals first select the \emph{type} of
+insurance they will have (e.g., employer, non-group, public, or
+uninsured) and then conditional on that choice, select among plans
+within that type. One difference, however, is that the CBO only models
+marginal changes in coverage, not transitions as we do here. In that
+sense the CBO model yields estimates analogous to repeated cross section
+data, versus longitudinal data.
+
+With the underlying utility structure specified, policy changes are then
+modeled to affect utility/take-up through their impact on prices,
+quality, offers of employment-based insurance, etc. In a microsimulation
+model, this affects the systematic component of utility (i.e.,
+\(V_{ij}\)), which is modeled directly using calibrated microdata on
+individuals and simulated employer choices to offer insurance.
+Attributes of plans and individuals in the microdata are adjusted to
+reflect the modeled reform scenario. Specific parameters in the
+systematic component of the CBO microsimulation model are summarized in
+the equation below.
+
+\includegraphics[width=0.7\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/./figures/01_cbo-utility-plain}
+
+Similarly, in an elasticity-based microsimulation model---which the CBO
+used prior to 2018---price changes for each of the \(J\) insurance
+options are simulated for units in the microdata. Elasticities and
+further adjustments (e.g., income effects) are then applied to derive
+new choice probabilities. These aggregated choice probabilities, along
+with attributes of individuals (e.g., health status) and policy (e.g.,
+subsidy schedules) are the building blocks for other modeled outcome
+changes (e.g., cost of subsidies, premiums, etc.). For example, the
+Gruber Microsimulation Model, which was used by the White House and
+Congress to model the ACA, used an underlying reduced-form take-up
+equation with the following form: \[
+P(y_{it} = j) = (\texttt{Constant} + \texttt{Elasticity} \times \texttt{Percent Price Change} \times \texttt{Income Effect})*\texttt{Income Adjustment}
+\]
+
+\hypertarget{modeling-boldsymbolr1-a-reduced-form-approach}{%
+\subsection{\texorpdfstring{Modeling \(\boldsymbol{R(1)}\): A
+Reduced-Form
+Approach}{Modeling \textbackslash boldsymbol\{R(1)\}: A Reduced-Form Approach}}\label{modeling-boldsymbolr1-a-reduced-form-approach}}
+
+A nice feature of the modeling structure developed here is that
+researchers can simply estimate or derive takeup probabilities from the
+applied literature rather than use a detailed microsimulation model. In
+this section we will detail how we derive estimates of
+\(\boldsymbol{R_i}\) using differences-in-differences (for estimates of
+the impact of public program expansion) and regression discontinuity
+(for estimates of take-up of subsidized private plans).
+
+\hypertarget{refs}{}
+\leavevmode\hypertarget{ref-gravesChangingDynamicsUS2017}{}%
+Graves, John A., and Sayeh S. Nikpay. 2017. ``The Changing Dynamics of
+US Health Insurance and Implications for the Future of the Affordable
+Care Act.'' \emph{Health Affairs} 36 (2): 297--305.
+\url{https://doi.org/10.1377/hlthaff.2016.1165}.
+
+\end{document}

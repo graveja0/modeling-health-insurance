@@ -17,11 +17,16 @@ knitr::opts_chunk$set(cache = TRUE)
 # https://en.wikibooks.org/wiki/Unicode/Character_reference/0000-0FFF
 
 suppressWarnings(suppressMessages(source(here::here("./R/manifest.R"))))
+wrap_string <- function(x,width) paste0(strwrap(x,width = width),collapse = "\n")
 
 results <- 
   read_rds(here("output/dd-estimates/primary-results.rds"))
 dd_lm <- results$dd_lm
 dd_lm_ri <- results$dd_lm_ri
+
+#!!! This file is constructed in 01_construct-and-calibrate-model.Rmd 
+df_calib <- 
+  read_rds(here("output/model-calibration-to-acs/01_calibration-results.rds"))
 
 #!!! These files are written in 02_replicate-finkelstein-shepard-hendren.Rmd
 df_wtp_and_costs <-  read_rds(here("./output/demand-estimates/01_wtp-and-cost.rds"))
@@ -80,7 +85,6 @@ params <-
 
 ## Tables for Publication
 
-
   R <-  params[grep("^R_",names(params))] %>% unlist() %>% 
     data.frame() %>% 
     rownames_to_column(var = "type") %>% 
@@ -99,32 +103,6 @@ params <-
     select(-exa) %>% 
     as.matrix()
   
-    
-  R %>% 
-  tbl_df() %>% 
-  set_names(c("Employer","Non-Group","Public","Uninsured")) %>% 
-  mutate(ex_ante = c("Employer","Non-Group","Public","Uninsured")) %>% 
-  select(ex_ante, everything()) %>% 
-  gt() %>% 
-  fmt_number(
-    columns = 2:5,
-    decimals = 3
-  ) %>% 
-  gtsave(here("./figures/99_coverage-transitions-matrix.png"))
-  
-  
-  DD %>% 
-  tbl_df() %>% 
-  set_names(c("Employer","Non-Group","Public","Uninsured")) %>% 
-  mutate(ex_ante = c("Employer","Non-Group","Public","Uninsured")) %>% 
-  select(ex_ante, everything()) %>% 
-  gt() %>% 
-  fmt_number(
-    columns = 2:5,
-    decimals = 3
-  ) %>% 
-  gtsave(here("./figures/99_medicaid-transitions-DD.png"))
-  
 #####################
 # MEDICAID
 #####################
@@ -134,7 +112,7 @@ params$OOP_Cx <- 569 # OOP spending among control compliers
 params$OOP_Tx <- 0 # OOP spending among treatment compliers
 params$sigma <- 3 # Coefficient of absolute risk aversion (needed only if we model I later)
 params$I <- 760 # pure insurance component -- note this can be further estimated.
-params$gov_incidence = 1
+params$gov_incidence = 0.5
 params$fudge <-0
 params$v_i <- 0.65
 params$v_j <- 1.15
@@ -147,9 +125,10 @@ params$pop_fpl = 150
 params$plan_type = "H"
 params$uninsured_oop_share = params$OOP_Cx / params$G_Cx
 params$phi = 0.25
-params$eta = 0.5
+params$eta = 0.75
 params$plan_premium = 25
 params$welfare_weight = 0.5
+params$frac_uninsured_elig = 0.7
 
 # Parameters that are functions of other parameters
 params$takeup_coef = get_takeup_coef(params = params)
@@ -157,13 +136,9 @@ params$cost_coef = get_cost_coef(params = params)
 
 subsidy_test <- simulate_subsidy(params)
 medicaid_test <- calculate_wtp_public(params)
-
-#cov_sim(params)
 ```
 
 ```{r}
-
-
 dist_lut <- c("qnorm" = "Normal",
               "qunif" = "Uniform",
               "qnorm01" = "Normal")
@@ -186,8 +161,10 @@ params_lut <-
     "subsidy_takeup" = "Subsidy take-up",
     "v_i" = "Welfare weight for targeted income group",
     "v_j" = "Welfare weight for high-income group",
-    "takeup" = "Fraction taking up subsidized coverage")
+    "takeup" = "Fraction taking up subsidized coverage",
+    "frac_uninsured_elig" = "Fraction of uninsured population eligible for subsidies")
 
+params_lut_wrapped <- lapply(params_lut,function(x) wrap_string(x,width = 50))
 ```
 
 ```{r}
@@ -279,6 +256,7 @@ params_psa$sigma = function(x) qnorm(p = x, mean =  params$sigma, sd = 0) # Coef
 params_psa$I = function(x) qnorm(p = x, mean =  params$I, sd = 200) # pure insurance component -- note this can be further estimated.
 params_psa$fudge = function(x) qnorm(p = x, mean =  params$fudge, sd = 0) # pure insurance component -- note this can be further estimated.
 params_psa$gov_incidence = function(x) qunif(p = x, min = 0, max = 1)
+params_psa$frac_uninsured_elig = function(x) qnorm(p = x, mean =  params$frac_uninsured_elig, sd = .05)
 #params_psa$welf_weight = function(x) qunif(p = x, min = 0, max = 1)
     
 # Only use Halton draws for PSA parameters that aren't fixed.
@@ -325,31 +303,121 @@ tbl <-
   select(3,1,2) %>% 
   left_join(psa_values,c("rowname")) %>% 
   mutate_at(vars(3),function(x) as.numeric(paste0(x))) %>% 
-  mutate_at(vars(3),function(x) ifelse(x>1000,x/1000,ifelse(x<=1,round(x,3), round(x,1)))) #%>% 
+  mutate_at(vars(3),function(x) ifelse(x>1000,x/1000,ifelse(x<=1,round(x,3), round(x,1)))) %>%
+  filter(rowname!="sigma")
   #mutate(desc = gsub("$","\\$",desc)) %>% 
   #set_colnames(c("Parameter Description","Short Name","Value")) 
   #tangram(., as.character=TRUE, style="lancet", caption="Model Parameters",id = "params")
 
 p_tbl <- 
 tbl %>% 
+  #filter(!grepl("NOT CURRENTLY",desc)) %>% 
   gt(rowname_col = "Parameter Description") %>% 
   tab_header(
     title = "Model Parameters"
   ) %>% 
   tab_options(
     table.width = pct(75)
-  ) 
+  ) %>% 
+  fmt_missing(columns = 3:8, missing_text = "") %>% 
+  cols_label(. = "Value", 
+             desc = "Parameter",
+             rowname = "Short Name",
+             distribution = "PSA Distribution",
+             mean = "Mean",
+             sd = "Standard Deviation",
+             max = "Maximum",
+             min = "Minimum") %>% 
+  tab_row_group(group = "Shared Parameters", rows = which(tbl$rowname %in% c("gov_incidence","v_i","v_j","pop_fpl","uninsured_oop_share"))) %>% 
+  tab_row_group(group = "Medicaid Parameters", rows = which(tbl$rowname %in% c("G_Cx","G","OOP_Cx","OOP_Tx","I"))) %>% 
+  tab_row_group(group = "Price-Fixed Subsidy Parameters", rows = which(tbl$rowname %in% c("plan_premium","frac_uninsured_elig","phi","eta")))
+
 p_tbl 
 gtsave(p_tbl, filename = here("./figures/03_simulate-subsidy-baseline-parameters.png"))
 ```
 
+
+```{r}
+p_tbl_shared <- 
+  tbl %>% 
+  filter(rowname %in% c("gov_incidence","v_i","v_j","pop_fpl","uninsured_oop_share")) %>% 
+  #filter(!grepl("NOT CURRENTLY",desc)) %>% 
+  gt(rowname_col = "Parameter Description") %>% 
+  tab_header(
+    title = "Model Parameters Shared Across Strategies"
+  ) %>% 
+  tab_options(
+    table.width = pct(75)
+  ) %>% 
+  fmt_missing(columns = 3:8, missing_text = "") %>% 
+  cols_label(. = "Value", 
+             desc = "Parameter",
+             rowname = "Short Name",
+             distribution = "PSA Distribution",
+             mean = "Mean",
+             sd = "Standard Deviation",
+             max = "Maximum",
+             min = "Minimum") 
+
+gtsave(p_tbl_shared , filename = here("./figures/03_simulate-subsidy-baseline-parameters-shared.png"))
+
+
+p_tbl_medicaid <- 
+  tbl %>% 
+  filter(rowname %in% c("G_Cx","G","OOP_Cx","OOP_Tx","I")) %>% 
+  #filter(!grepl("NOT CURRENTLY",desc)) %>% 
+  gt(rowname_col = "Parameter Description") %>% 
+  tab_header(
+    title = "Model Parameters: Medicaid Expansion"
+  ) %>% 
+  tab_options(
+    table.width = pct(75)
+  ) %>% 
+  fmt_missing(columns = 3:8, missing_text = "") %>% 
+  cols_label(. = "Value", 
+             desc = "Parameter",
+             rowname = "Short Name",
+             distribution = "PSA Distribution",
+             mean = "Mean",
+             sd = "Standard Deviation",
+             max = "Maximum",
+             min = "Minimum") 
+
+gtsave(p_tbl_medicaid , filename = here("./figures/03_simulate-subsidy-baseline-parameters-medicaid.png"))
+
+
+
+p_tbl_subsidy<- 
+  tbl %>% 
+  filter(rowname %in% c("plan_premium","frac_uninsured_elig","phi","eta")) %>% 
+  bind_rows(data.frame(desc = "Coverage Takeup: Regression-Discontinuity Estimates", rowname = "beta", distribution="Multivariate Normal"))   %>% 
+  #filter(!grepl("NOT CURRENTLY",desc)) %>% 
+  gt(rowname_col = "Parameter Description") %>% 
+  tab_header(
+    title = "Model Parameters: Price-Linked Subsidy"
+  ) %>% 
+  tab_options(
+    table.width = pct(75)
+  ) %>% 
+  fmt_missing(columns = 3:8, missing_text = "") %>% 
+  cols_label(. = "Value", 
+             desc = "Parameter",
+             rowname = "Short Name",
+             distribution = "PSA Distribution",
+             mean = "Mean",
+             sd = "Standard Deviation",
+             max = "Maximum",
+             min = "Minimum") 
+
+gtsave(p_tbl_subsidy , filename = here("./figures/03_simulate-subsidy-baseline-parameters-subsidy.png"))
+```
 
 
 ```{r}
 # Raw halton draw
 draws <- randtoolbox::halton(n = 1e3, dim = length(params_psa[which_are_fns])) %>% as.matrix()
 
-set.seed(23)
+set.seed(123)
 
 halton_draws <- 
   draws %>% 
@@ -412,6 +480,38 @@ df_est_medicaid <-
   mutate(label_reformed = paste0(" Modeled Estimate:\n Medicaid \n (MVPF = ",round(mvpf,3),")"))  
 
 ```
+
+```{r baseline_results}
+simulated_policy <- cov_sim(params)
+
+baseline_results <- 
+  simulated_policy %>% 
+  gather(key,value) %>% 
+  filter(grepl("esi_own|priv_oth|public|uninsured|subsidy_mvpf$|med_mvpf$",key))  %>% 
+  separate(key,into = c("policy","type1","type2","type3"),"_") %>% 
+  mutate(type2 = ifelse(grepl("mvpf",type1),"mvpf",type2)) %>% 
+  select(policy,type = type2, value) %>% 
+  spread(policy,value) %>% 
+  mutate(med = ifelse(type!="mvpf",med - baseline,med)) %>% 
+  mutate(subsidy = ifelse(type!="mvpf",subsidy - baseline,subsidy)) %>% 
+  mutate(type = factor(type,levels = c("esi","priv","public","uninsured","mvpf"), 
+                       labels = c("Employer-Sponsored Insurance","Private Non-Group","Public","Uninsured","Marginal Value of Public Funds"))) %>% 
+  arrange(type) %>% 
+  gt(rowname_col = "type") %>% 
+  tab_stubhead(label = "") %>% 
+  cols_label(baseline = "Baseline",
+             med = "Expand In-Kind Benefits\n(Medicaid)",
+             subsidy = "Price-Linked Subsidy") %>% 
+  fmt_number(columns = 1:4, decimals = 3) %>% 
+  fmt_missing(columns = 1:4,missing_text="") %>%
+  tab_row_group(group = "", rows = c("Marginal Value of Public Funds")) %>% 
+  tab_row_group(group = "Coverage Effects", rows = c("Employer-Sponsored Insurance","Private Non-Group","Public","Uninsured"))
+
+baseline_results %>% gtsave(filename = here("figures/99_baseline-results.png"))
+```
+
+
+
 
 ```{r}
 lambda_lut <- c("lambda_1" = "\u3bB = 0.2",
@@ -503,31 +603,43 @@ range2<-c(0,1)
 
 
 ```{r}
-
-p1 <- OneWaySA(indata = df_psa_full %>% select(-contains("SDDUBSIDY")), outcome = "NHB", parm = parm1, range = range1, lambda = 1) + 
+p1 <- OneWaySA(indata = df_psa_full %>% select(-contains("SDDUBSIDY")), outcome = "NHB", parm = parm1, range = range1, lambda = 0.8) + 
   #ggtitle("One Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nMVPF Benchmark = 0.9") + 
   theme(legend.position = "none") +
- xlim(c(0,1.3))  + ylab("E[NWB]") + ylim(c(-1,2)) +
+ xlim(c(0,1.3))  + ylab("E[NWB]") + ylim(c(-1,1)) +
   #theme(plot.title = element_text(family = "Gill Sans",face = "plain")) + 
   theme(plot.title = element_blank()) + 
   theme_tufte_revised() + 
   theme(legend.position = "none", text = element_text(family = "Gill Sans"))+ 
   scale_x_continuous(limits = c(0,1.3), breaks = seq(0,1,0.2))
-p1 %>% ggsave(filename = here("./figures/03_one-way-sensitivity_gov-incidence_lambda90.png"))
+p1 %>% ggsave(filename = here("./figures/03_one-way-sensitivity_gov-incidence_lambda80.png"))
 
-p2 <- OneWaySA(indata = df_psa_full  %>% select(-contains("SUBSDDDIDY")), outcome = "NHB", parm = parm1, range = range1, lambda = .2) + 
+p2 <- OneWaySA(indata = df_psa_full  %>% select(-contains("SUBSDDDIDY")), outcome = "NHB", parm = parm1, range = range1, lambda = .6) + 
   #ggtitle("One Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nMVPF Benchmark = 0.2") + 
   theme(legend.position = "none") +
- xlim(c(0,1.3))  + ylab("E[NWB]") + ylim(c(-1,2)) +
+ xlim(c(0,1.3))  + ylab("E[NWB]") + ylim(c(-1,1)) +
   theme(plot.title = element_text(family = "Gill Sans",face = "plain")) + 
   theme_tufte_revised() + 
   theme(legend.position = "none", text = element_text(family = "Gill Sans")) + 
   scale_x_continuous(limits = c(0,1.3), breaks = seq(0,1,0.2))
 
-p2 %>% ggsave(filename = here("./figures/03_one-way-sensitivity_gov-incidence_lambda20.png"))
+p2 %>% ggsave(filename = here("./figures/03_one-way-sensitivity_gov-incidence_lambda60.png"))
+
+
+p3 <-  OneWaySA(indata = df_psa_full  %>% select(-contains("SUBSDDDIDY")), outcome = "NHB", parm = "I", range = c(500,1200), lambda = .6) + 
+  #ggtitle("One Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nMVPF Benchmark = 0.2") + 
+  theme(legend.position = "none") +
+ xlim(c(500,1200))  + ylab("E[NWB]") + ylim(c(-1,1)) +
+  theme(plot.title = element_text(family = "Gill Sans",face = "plain")) + 
+  theme_tufte_revised() + 
+  theme(legend.position = "none", text = element_text(family = "Gill Sans")) + 
+  scale_x_continuous(limits = c(500,1400), breaks = seq(500,1400,200)) + xlab("Insurance Value of Medicaid")
+
+p3 %>% ggsave(filename = here("./figures/03_one-way-sensitivity_insurance-value-medicaid_lambda60.png"))
+
 
 p1  + ggtitle("One Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nMVPF Benchmark = 0.9")
-p2 + ggtitle("One Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nMVPF Benchmark = 0.2")
+p2 + ggtitle("One Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nMVPF Benchmark = 0.6")
 ```
 
 ```{r}
@@ -571,7 +683,7 @@ p3 <-
 
 p4 <- p1 + p2 + p3
 
-p4 %>% ggsave(filename = here("./figures/03_two-sensitivity_value-medicaid_gov-incidence.png"))
+p4 %>% ggsave(filename = here("./figures/03_two-sensitivity_value-medicaid_gov-incidence.png"), width = 20, height =8, units="in")
 p4
 ```
 
@@ -597,7 +709,7 @@ p_ceac <-
   
   #scale_x_continuous(limits = c(0,1.3), breaks = seq(0,1,0.2))
 p_ceac + ggtitle("Policy Acceptability Frontier")
-p_ceac %>% ggsave(filename=here("./figures/03_policy-acceptability-frontier.png"), width = 6, height = 5, units = "in")
+p_ceac %>% ggsave(filename=here("./figures/03_policy-acceptability-frontier.png"), width = 7, height = 4, units = "in")
 ```
 
 

@@ -1,0 +1,1587 @@
+---
+title: "A Unified Approach for Ex Ante Policy Evaluation"
+subtitle: "Supplemental Materials"
+author: John Graves, Vanderbilt University
+abstract: ""
+output:
+  pdf_document: 
+    keep_tex: yes
+    number_sections: yes
+  header_includes: 
+     - \usepackage{floatrow}
+     - \floatsetup[figure]{capposition=top}
+     - \usepackage{bm}
+  word_document:
+    fig_caption: yes
+    fig_height: 3.5
+    fig_width: 6.5
+    reference_docx: markdown-word-style.docx  
+header-includes:
+   - \usepackage{setspace}
+   - \doublespacing
+self_contained: no
+always_allow_html: yes
+bibliography: "../docs/00_ex-ante-evaluation_bibliography.bib"
+urlcolor: blue
+geometry: margin=1in
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Discrete Choice Model
+
+This section describes the structure, assumptions and calibration of a discrete time and choice model of U.S. health insurance coverage. 
+
+To begin, consider a model of insurance choice among $J$ alternatives (including the choice not to insure). Define $U_{itj}$ as the utility for choice unit $i$ from selecting choice $j$ at time $t$.
+
+\[
+U_{itj} = V(\mathbf{x_{itj}}, \mathbf{z_i})+ \epsilon_{ij}
+\]
+\noindent where $\mathbf{x_{itj}}$ is a vector of time-varying attributes of the $J$ choices and the health insurance unit (HIU), or the collection of related family members who could enroll under the same plan. Utility also depends on fixed attributes of the HIU ($\mathbf{z_i}$),  and an unobservable component $\epsilon_{itj}$.
+
+For HIU $i$, the choice of insurance $y_{it}$ is based on maximizing utility across the $J$ alternatives at time $t$:
+
+\[
+y_{it} = {\arg \max}_j [U_{itj}, j = 1, \dots, J]
+\]
+
+We next define a function $B(\cdot)$ mapping utility from choice $j$ to $r_{ij} = P(y_{it} = j)$, the probability of individual $i$ selecting choice $j$. If the error terms $\epsilon_{ij}$ are independent across units and are distributed Type I Extreme Value, we get a standard conditional logit for $B(\cdot)$. However, other link functions---such as based on a nested logit or multinomial logit model---could also be used. 
+
+# From Utility to Probability: Linkages to Common Microsimulation Approaches 
+
+The specification of choice probabilities via a link function to an underlying utility maximization model is the theoretical chassis for most major microsimulation models of the U.S. health care system. This includes models used by the Congressional Budget Office (CB), the RAND Corporation, and the Urban Institute, among others. 
+
+For example, the CBO model utilizes a similar underlying utility equation:
+
+\[
+U_{ij} = \beta_1 V_{ij} + \epsilon_{ij}
+\]
+\noindent where the paramter $\beta$ rescales utility into dollar terms. In the CBO model, the systematic component of utility (i.e., $V_{ij}$) is modeled using microdata on individuals and simulated employer choices to offer insurance. 
+
+```{r, fig.pos="h", echo = FALSE,out.width="90%"}
+knitr::include_graphics(here::here("./figures/01_cbo-utility-plain.png"))
+```
+
+The CBO model similarly defines a link function $B(\cdot)$ converting utility to choice probabilities based a on nested logit in which individuals first select the *type* of insurance they will have (e.g., employer, non-group, public, or uninsured) and then conditional on that choice, select among plans within that type.
+
+In addition to sharing a common "DNA" with major microsimulation models, another nice feature of the discrete choice model structure outlined above is that it also maps directly into a reduced form modeling structure. Under this structure, changes in choice probabilities are modeled using microdata on individuals by applying reduced form literature-based elasticity estimates to simulated changes in price. This "reduced-form" or "elasticity-based" approach to microsimulation of U.S. health reform was previously used by the CBO (prior to 2019) and in other major microsimulation models.
+
+# Insurance Choice as a Markov Process
+
+As discussed in the introduction to this study, a major downside to common approaches to microsimulation is that they require considerable h
+
+To address this shortcoming, we next take the utility maximization model developed above and map it into a "sufficient statistics" approach to modeling changes to U.S. health insurance policy. In so doing we can summarize policy changes in terms of a minimal set of parameters.
+
+To do so we first recognize that the insurance choice process at two time periods can be summarized in terms of a Markov trace. First, define the *ex ante occupancy vector* $\mathbf{\tilde p}$ summarizing the count or fraction of the population at baseline.
+
+- Also define a transition probability matrix $\mathbf{R_i} =  [r_{irs}]$. 
+
+  - Cells in this $J \times J$ matrix defined by transition probabilities: $r_{irs} = P(y_{it} = s | y_{i,t-1}=r)$  
+  
+  - At a population level (with size $N$) define $\mathbf{R} =  [r_{rs}]$ where $r_{rs} = \sum_{i=1}^Nr_{irs}/N$.
+
+
+- $\mathbf{p}$, the distribution of coverage  at time $t$,  is given by $\mathbf{\tilde{p}'R}$. 
+
+
+# Development and Calibration of Policy Simulation Model
+
+The basis for the simulation model is longitudianl data on insurance choice from the 2014 Survey of Income and Program Participation (SIPP) calibrated to American Community Survey (ACS) on insurance coverage from 2015 to 2018.
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+options("scipen"=100, "digits"=6)
+library(tidyverse)
+library(rlang)
+library(kableExtra)
+library(knitr)
+library(pander)
+library(magrittr)
+library(doParallel)
+library(mstate)
+library(flexsurv)
+library(eha)
+library(heemod)
+library(here)
+library(conflicted)
+library(cluster)
+library(directlabels)
+library(gt)
+library(patchwork)
+library(randtoolbox)
+library(matrixStats)  
+library(mgcv) 
+library(Matrix)
+library(lhs)
+library(IMIS)
+library(matrixStats) # package used for sumamry statistics
+# visualization
+library(plotrix)
+library(psych)
+
+conflict_prefer("filter", "dplyr")
+conflict_prefer("set_names", "rlang")
+conflict_prefer("lag", "dplyr")
+conflict_prefer("set_names","rlang")
+conflict_prefer("filter","dplyr")
+conflict_prefer("count","dplyr")
+
+source(here::here("R/prepare-multistate-data.R"))
+source(here::here("R/fit-multistate-model.R"))
+source(here::here("R/get-cumulative-hazard.R"))
+source(here::here("R/add-binary-indicators.R"))
+
+source(here::here("../../../box/sccs-r01/transitions-dd/R//prepare-multistate-data.R"))
+source(here::here("../../../box/sccs-r01/transitions-dd/R//fit-multistate-model.R"))
+source(here::here("../../../box/sccs-r01/transitions-dd/R//get-cumulative-hazard.R"))
+source(here::here("../../../box/sccs-r01/transitions-dd/R//add-binary-indicators.R"))
+source(here::here("../../../box/sccs-r01/transitions-dd/R//transitions-dd-model.R"))
+source(here::here("../../../box/sccs-r01/transitions-dd/R//ri-permute.R"))
+source(here("./R/functions_finkelstein-hendren-shepard-replication.R"))
+source(here("./R/functions-simulation.R"))
+source(here::here("R/shared-objects.R"))
+
+insurance_lut <- 
+  c("01_esi_own" = "Employer - Own Policy",
+    "02_priv_oth" = "Private - Non-Employer",
+    "03_public" = "Public",
+    "04_uninsured" = "Uninsured")
+
+insurance_sipp_lut <- c(
+    "cat_1" = "01_esi_own",
+    "cat_2" = "02_priv_oth",
+    "cat_3" = "03_public",
+    "cat_4" = "04_uninsured"
+  )
+
+```
+
+```{r fit sipp, echo = FALSE, eval = FALSE}
+
+run_dd_results = FALSE
+
+if (run_dd_results) {
+
+  # Load and prepare data
+  months_to_model <- c(1,13) 
+  df_sipp_full <- read_rds(here("../../../box/sccs-r01/transitions-dd/input/sipp/01_sipp-tidy_v2-0.rds"))
+  
+  # Get the weight (first month weight)
+  df_w <- 
+    df_sipp_full %>% 
+    mutate(idnumber = id) %>% 
+    group_by(idnumber) %>% 
+    mutate(year = ifelse(swave ==1 , 2014, ifelse(swave==2,2015,2016))) %>% 
+    mutate(month = ifelse(swave ==1 , monthcode, ifelse(swave==2,monthcode+12,monthcode+24))) %>% 
+    filter(month==1) %>% 
+    mutate(expansion_state = 
+             as.integer(expansion_date == "2014-01-01" & 
+                          (substantial_expansion_state == 1 | full_expansion_state == 1 |
+                             mild_expansion_state==1))) %>% 
+    mutate(exclude_state = as.integer(expansion_date != "2014-01-01")) %>% 
+    # Expansion state varies in the underling data due to moves. Just keeping state at 
+    # baseline. 
+    select(idnumber,contains("state"), sex, race, weight = wpfinwgt) %>% 
+    ungroup() 
+  
+  df_sipp <- 
+    df_sipp_full %>%   
+    # Expansion state varies in the underling data due to moves. Just keeping state at 
+    # baseline. 
+    select(-contains("state")) %>% 
+    filter(age < 63 & age > 18) %>% 
+    mutate(year = ifelse(swave ==1 , 2014, ifelse(swave==2,2015,2016))) %>% 
+    mutate(month = ifelse(swave ==1 , monthcode, ifelse(swave==2,monthcode+12,monthcode+24))) %>% 
+    mutate(idnumber = id) %>% 
+    mutate(insurance_type = ifelse(rhimth==2 & medcaidmth==0 & medcarmth==0 & ephi_t==0 & milmth==0 & privhimth==0,4,
+                                   ifelse(medcaidmth==1 | medcarmth==1,3,
+                                          ifelse((ephi_t==1 | milmth==1) & own_cov==1,1,
+                                                 ifelse((ephi_t==1 | milmth==1) & own_cov==0,1,
+                                                        ifelse(privhimth==1,2,NA)))))) %>% 
+    
+    mutate(insurance_type=factor(insurance_type, labels = insurance_sipp_lut)) %>% 
+    #mutate(insurance_type = as.numeric(factor(insurance_type))) %>% 
+    select(idnumber,month,insurance_type)  %>% 
+    group_by(idnumber) %>% 
+    ungroup()  %>% 
+    left_join(df_w,"idnumber") %>% 
+    filter(exclude_state != 1 | is.na(exclude_state)) %>% 
+    mutate(weight = 1) %>% 
+    mutate(state = as.character(paste0(state))) %>% 
+    group_by(idnumber) %>% 
+    mutate(months_in_sample = n())
+
+   #######################################
+   ## Set up and fit multi-state model
+   #######################################
+   fit_multistate <- function(df,month_to_get = 13) {
+     cat("Structuring data for multistate model ...\n")
+     ls_ms <- 
+        df %>% 
+        mutate(insurance_type = paste0(insurance_type)) %>% 
+        mutate(constant = 1) %>% 
+        prepare_multistate_data(idvar = idnumber,
+                                timevar = month, 
+                                statevar = insurance_type) 
+      
+      categories <- names(ls_ms$trans_mat)
+   
+    cat("Fitting multistate model ...\n")
+    fit_transition <- 
+      map(categories,
+           ~ (
+             fit_multistate_model(
+               df = ls_ms$df_ms %>% pluck(.x),
+               tmat = ls_ms$trans_mat %>% pluck(.x),
+               fit_type = "km",
+               ff = Surv(Tstart, Tstop, status) ~ 1,
+               idvar = idnumber,
+               prediction_vals = data.frame(constant = 1)
+             ) 
+           )) %>% 
+        set_names(categories)
+    
+     trans_probs <- 
+       categories %>% 
+        map(~(
+        get_cumHaz(dist = fit_transition[[1]]$fit_type ,
+                   ls_fit = fit_transition %>% pluck(.x), 
+                   tt = 1:24,
+                   lut = fit_transition %>% 
+                     pluck(.x) %>% pluck("lut"))  %>% 
+          mutate(trans = paste0("pstate",trans)) %>% 
+          spread(trans,Haz) %>% 
+          magrittr::set_names(c("time",fit_transition %>% pluck(.x) %>% 
+                                  pluck("lut") %>% pull(transition_type))) %>% 
+          mutate(baseline = .x) %>% 
+          janitor::clean_names()
+      )) %>% 
+      bind_rows() %>% 
+      select(time,baseline,x01_esi_own,x02_priv_oth,x03_public,x04_uninsured) %>% 
+      group_by(time) %>% 
+      nest() %>% 
+      filter(time == month_to_get ) %>% 
+      mutate(rates = map(data,~(
+        .x %>% as.data.frame() %>% 
+          column_to_rownames(var = "baseline") %>% 
+           mutate(x01_esi_own = ifelse(is.na(x01_esi_own),-(x02_priv_oth+x03_public+x04_uninsured),x01_esi_own)) %>% 
+           mutate(x02_priv_oth = ifelse(is.na(x02_priv_oth),-(x01_esi_own+x03_public+x04_uninsured),x02_priv_oth)) %>% 
+           mutate(x03_public = ifelse(is.na(x03_public),-(x01_esi_own+x02_priv_oth+x04_uninsured),x03_public)) %>% 
+           mutate(x04_uninsured = ifelse(is.na(x04_uninsured),-(x01_esi_own+x02_priv_oth+x03_public),x04_uninsured)) %>% 
+           set_names(gsub("^x","",names(.x)[-1])) %>% 
+           as.matrix() 
+           #set_rownames(gsub("^x","",names(.x)[-1])) #%>% 
+          # as.matrix() 
+      ))) %>% 
+      mutate(prob = map2(rates,data,~(
+        as.matrix(expm(.x)) %>% 
+          data.frame() %>% 
+          rownames_to_column(var = "baseline") %>% 
+          set_names(gsub("^x","",names(.y))) %>% 
+          tbl_df()
+      ))) %>% 
+       select(prob) %>% 
+       unnest() %>% 
+       mutate(baseline = paste0(factor(baseline, labels = c("01_esi_own", "02_priv_oth", "03_public", "04_uninsured"))))
+     
+     return(trans_probs)
+   }
+
+R_nonexp <- 
+  df_sipp %>% 
+    filter(expansion_state == 0 ) %>% 
+    fit_multistate()
+
+R_nonexp12 <- 
+  df_sipp %>% 
+    filter(expansion_state == 0 ) %>% 
+    fit_multistate(month_to_get = 12)
+
+R_exp <- 
+  df_sipp %>% 
+    filter(expansion_state == 1 ) %>% 
+    fit_multistate()
+
+R_exp12 <- 
+  df_sipp %>% 
+    filter(expansion_state == 1 ) %>% 
+    fit_multistate(month_to_get = 12)
+
+list(R_exp = R_exp, R_nonexp = R_nonexp, R_exp12 = R_exp12, R_nonexp12 = R_nonexp12) %>% 
+  write_rds(here("output/transition-probabilities/transition-probabilities-kaplan-meier.rds")) 
+  
+  ################################################################################
+  # Fit Difference-in-Differences Estimates for Medicaid Expansion Parameters
+  ################################################################################
+  df <-                                     # Data frame for estimation
+    df_sipp %>%
+    filter(month %in% months_to_model) %>% 
+    #filter(months_in_sample == months_to_model[2]) %>% 
+    mutate(post_expansion = as.integer(month>12)) %>% 
+    select(insurance_type,expansion_state,post_expansion,idnumber,month,state,weight) %>% 
+    arrange(idnumber,month) %>% 
+    filter(!is.na(insurance_type)) %>% 
+    group_by(idnumber) %>% 
+    filter(n()==2) %>% 
+    group_by(idnumber) %>% 
+    mutate(tmp = ifelse(row_number()==1, insurance_type,lag(insurance_type))) %>% 
+    ungroup() %>% 
+    mutate(baseline_insurance_type = factor(tmp, labels = insurance_sipp_lut)) %>% 
+    select(-tmp)
+  ################################################################################
+  
+  dd_lm <- 
+    df %>% 
+    fit_transitions_dd(outcome = insurance_type,
+                       id = idnumber,
+                       time = month,
+                       ff = as.formula( ~ post_expansion + expansion_state + post_expansion * expansion_state),
+                       ff_trans = as.formula( ~ post_expansion + expansion_state + baseline_insurance_type + 
+                                                 post_expansion * baseline_insurance_type + post_expansion * expansion_state + 
+                                                 expansion_state * baseline_insurance_type + 
+                                                post_expansion * expansion_state * baseline_insurance_type),
+                       term = "post_expansion:expansion_state"
+    )
+  
+  dd_lm_ri <- df %>%
+      ri_permute(m = 1000, 
+                 treatment = expansion_state, 
+                 cluster = state, 
+                 idvar = idnumber,
+                 outcome = insurance_type) %>% 
+      do(fit_transitions_dd(df = . ,
+                            outcome = insurance_type,
+                         id = idnumber,
+                         time = month,
+                         ff = as.formula( ~ post_expansion + expansion_state + post_expansion * expansion_state),
+                         ff_trans = as.formula( ~ post_expansion + expansion_state + baseline_insurance_type + 
+                                                   post_expansion * baseline_insurance_type + post_expansion * expansion_state + 
+                                                   expansion_state * baseline_insurance_type + 
+                                                  post_expansion * expansion_state * baseline_insurance_type),
+                         term = "post_expansion:expansion_state"
+      ))
+  
+    list(dd_lm = dd_lm, 
+         dd_lm_ri = dd_lm_ri)  %>% 
+      write_rds(here("output/dd-estimates/primary-results.rds"))
+}
+```
+
+```{r report sipp, echo = FALSE, eval = FALSE}
+results <- 
+  read_rds(here("output/dd-estimates/primary-results.rds"))
+# Primary Results
+dd_lm <- results$dd_lm
+# Primary Results: Randomization Inference
+dd_lm_ri <- results$dd_lm_ri
+
+## Ex Ante Shares
+ex_ante_shares <- 
+  dd_lm %>% 
+  filter(!is.na(ex_ante)) %>% 
+  select(ex_ante,starts_with("p_Z1_T0"), starts_with("p_Z0_T0")) %>% 
+  na.omit() %>% 
+  tbl_df() %>% 
+  mutate_at(vars(2:3),function(x) format(round(x,3),nsmall=3)) %>% 
+  mutate(test1 = "",test2="") %>% 
+  gather(key,value,-ex_ante,-p_Z1_T0,-p_Z0_T0) %>% 
+  arrange(ex_ante) %>% 
+  group_by(ex_ante) %>% 
+  mutate(n = row_number()) %>% 
+  mutate(treated = ifelse(n==1,p_Z1_T0,NA),
+         control = ifelse(n==1,p_Z0_T0,NA),
+         group = ifelse(n==1,insurance_lut[ex_ante],NA)) %>% 
+  ungroup() %>% 
+  select(group,treated,control) 
+  
+# Marginal Model Result
+get_twoper_result <- function(df) {
+  df %>% 
+  select(term,starts_with("marginal")) %>% 
+  na.omit() %>% 
+  gather(estimate, value, -term) %>% 
+  filter(term=="post_expansion:expansion_state") %>% 
+  mutate(group = insurance_sipp_lut)  %>% 
+  select(group,value)
+}
+get_quantile_ranking <- function(obs,inf) {
+  inf %>% 
+  group_by(replicate) %>% 
+  bind_rows(
+    obs %>% mutate(replicate=0) 
+  ) %>% 
+  group_by(group) %>% 
+  mutate(quantile_rank = percent_rank(value)) %>% 
+  filter(replicate == 0) %>% 
+  select(group,quantile_rank)
+}
+
+get_pvalue <- function(obs,inf) {
+  inf %>% 
+  group_by(replicate) %>% 
+  left_join(obs,"group") %>% 
+  mutate(obs_lt_est = as.integer(abs(value.y) < abs(value.x))) %>% 
+  group_by(group) %>% 
+  summarise(p_value = mean(obs_lt_est)) 
+}
+
+get_transprob_result <- function(df) {
+  df %>% 
+  select(ex_ante,starts_with("DD")) %>% 
+  na.omit() %>% 
+  gather(estimate, value, -ex_ante) %>% 
+  mutate(ex_post = estimate) %>% 
+  mutate(ex_post = gsub("^DD_","",ex_post)) %>% 
+  select(ex_ante,ex_post,value)
+}
+
+get_dd_marginal <- function(p1,p0,R1,DD,C,D) ((p1 %*% (C * R1) - p1*D) - (p0 %*% (C * (R1-DD)) - p0*D))
+
+get_marginal_estimates <- 
+  function(df, C = matrix(1,nrow = 4, ncol = 4), D = rep(1,4)) {
+    
+    # Regression Parameters (not going to output this now as decompositions won't match)
+    regression_parameters <- 
+      df %>% 
+        select(term,starts_with("marginal")) %>% 
+        filter(term == "post_expansion:expansion_state") %>% 
+        gather(ex_ante,beta,-term) %>% 
+        select(-term)
+    
+    p1 <- df %>% filter(!is.na(ex_ante)) %>% pull(p_Z1_T0) #%>% as.matrix()
+    p0 <- df %>% filter(!is.na(ex_ante)) %>% pull(p_Z0_T0) #%>% as.matrix()
+    tmp <- df %>% filter(!is.na(ex_ante)) %>% select(ex_ante,starts_with("DD")) 
+    DD <- tmp[,-1] %>% as.matrix()
+    rownames(DD) <- tmp$ex_ante
+    tmp2 <- df %>% filter(!is.na(ex_ante)) %>% select(ex_ante,starts_with("R1"))
+    R1 <- tmp2[,-1] %>% as.matrix()
+    rownames(R1) <- tmp2$ex_ante
+
+    get_dd_marginal(p1 = p1, p0 = p0, R1= R1, DD = DD, D = D, C = C ) %>% 
+      data.frame() %>% 
+      gather(estimate,value) %>% 
+      mutate(group = gsub("R1_","",estimate)) %>% 
+      select(-estimate)
+  }
+
+# Transition Probability Matrix Result
+transprob_result_obs <- 
+  dd_lm %>% 
+  get_transprob_result() %>% 
+  unite(group,ex_ante,ex_post,sep = "_TO_")
+
+transprob_result_inf <- 
+  dd_lm_ri %>% 
+  group_by(replicate) %>% 
+  do(get_transprob_result(df=.) %>% 
+  unite(group,ex_ante,ex_post,sep = "_TO_")) 
+  
+transprob_result <- 
+  transprob_result_obs %>% 
+  left_join(get_quantile_ranking(obs = transprob_result_obs, inf = transprob_result_inf),"group") %>% 
+  left_join(get_pvalue(obs = transprob_result_obs, inf = transprob_result_inf),"group")
+
+transprob_result_formatted <-
+ transprob_result %>% 
+  select(group, a_transprobl = value, b_p_value = p_value) %>% 
+  gather(row,value,-group) %>% 
+  arrange(group) %>% 
+  mutate(value = ifelse(grepl("^a_",row),format(round(value,4),nsmall=3),
+                        ifelse(value>0.01,paste0("(p=",format(round(value,2),nsmall=1),")"),
+                               paste0("(p< 0.01)")))) %>% 
+   separate(group,into = c("ex_ante","ex_post"),sep = "_TO_") %>% 
+   spread(ex_post,value) %>% 
+  mutate(ex_ante = ifelse(grepl("^a_",row),insurance_lut[ex_ante],"")) %>% 
+  select(-row) %>% 
+   set_colnames(c("group",insurance_lut))
+
+get_transitions <- function(df,group = "R0") {
+  df %>% 
+    select(ex_ante,starts_with(group)) %>% 
+    na.omit() %>% 
+    gather(estimate, value, -ex_ante) %>% 
+    mutate(ex_post = estimate) %>% 
+    mutate(ex_post = gsub("^RR_","",ex_post)) %>% 
+    select(ex_ante,ex_post,value)
+}
+
+# Transition Probability Matrix Result
+R_result_obs <- 
+  dd_lm %>% 
+  get_transitions(group = "R0") %>% 
+  unite(group,ex_ante,ex_post,sep = "_TO_")
+
+R_result_inf <- 
+  dd_lm_ri %>% 
+  group_by(replicate) %>% 
+  do(get_transitions(df=.,group = "R0") %>% 
+  unite(group,ex_ante,ex_post,sep = "_TO_")) 
+  
+R_result <- 
+  R_result_obs %>% 
+  left_join(get_quantile_ranking(obs = R_result_obs, inf = R_result_inf),"group") %>% 
+  left_join(get_pvalue(obs = R_result_obs, inf = R_result_inf),"group")
+
+R_result_formatted <-
+ R_result %>% 
+  select(group, a_transprobl = value, b_p_value = p_value) %>% 
+  gather(row,value,-group) %>% 
+  arrange(group) %>% 
+  mutate(value = ifelse(grepl("^a_",row),format(round(value,4),nsmall=3),
+                        ifelse(value>0.01,paste0("(p=",format(round(value,2),nsmall=1),")"),
+                               paste0("(p< 0.01)")))) %>% 
+   separate(group,into = c("ex_ante","ex_post"),sep = "_TO_") %>% 
+   spread(ex_post,value) %>% 
+  mutate(ex_ante = ifelse(grepl("^a_",row),insurance_lut[ex_ante],"")) %>% 
+  select(-row) %>% 
+   set_colnames(c("group",insurance_lut))
+
+# Transition Probabilities
+
+tmp <- 
+  ex_ante_shares %>% 
+  cbind(R_result_formatted[,-1])  
+# tmp[c(2,4,6,8),1] = ""
+
+R_table <- 
+  tmp  %>% gt(rowname_col = "group") %>% 
+    tab_source_note(
+    source_note = "Graves, McWilliams and Hatfield (2019)"
+  ) %>% 
+  tab_stubhead(label = "") %>% 
+  cols_label(treated = "Expansion",
+             control = "Nonexpansion") %>% 
+  fmt_missing(columns = 1:6, missing_text = "") %>% 
+  tab_spanner(columns = 4:7, label = "Transition Probability (Nonexpansion States)") %>% 
+   tab_spanner(columns = 1:3, label = "Ex Ante Share")
+
+R_table %>% gtsave(filename = here("figures/99_transprob-results.png"))
+  
+tmp <- ex_ante_shares %>% 
+  cbind(transprob_result_formatted[,-1]) 
+tmp[c(2,4,6,8),1] = ""
+
+dd_table <- 
+  tmp  %>% gt(rowname_col = "group") %>% 
+    tab_source_note(
+    source_note = "Graves, McWilliams and Hatfield (2019)"
+  ) %>% 
+  tab_stubhead(label = "") %>% 
+  cols_label(treated = "Expansion",
+             control = "Nonexpansion") %>% 
+  fmt_missing(columns = 1:6, missing_text = "") %>% 
+  tab_spanner(columns = 4:7, label = "Change in Transition Probability") %>% 
+  tab_spanner(columns = 1:3, label = "Ex Ante Share")
+
+dd_table %>% gtsave(filename = here("figures/99_dd-results.png"))
+  
+```
+
+```{r, fig.pos="h", echo = FALSE,out.width="90%"}
+knitr::include_graphics(here("figures/99_transprob-results.png"))
+```
+
+```{r, fig.pos="h", echo = FALSE,out.width="90%"}
+knitr::include_graphics(here("figures/99_dd-results.png"))
+```
+
+```{r, echo = FALSE}
+
+other_expansion_dates <- 
+  c("AK" = lubridate::as_date(zoo::as.yearmon("09/2014","%m/%Y")),
+    "IN" = lubridate::as_date(zoo::as.yearmon("02/2015","%m/%Y")),
+    "MI" = lubridate::as_date(zoo::as.yearmon("04/2014","%m/%Y")),
+    "MT" = lubridate::as_date(zoo::as.yearmon("01/2016","%m/%Y")),
+    "NH" = lubridate::as_date(zoo::as.yearmon("08/2014","%m/%Y")),
+    "PA" = lubridate::as_date(zoo::as.yearmon("01/2015","%m/%Y")),
+    "CA" = lubridate::as_date(zoo::as.yearmon("01/2010","%m/%Y")),
+    "CT" = lubridate::as_date(zoo::as.yearmon("01/2010","%m/%Y")),
+    "HI" = lubridate::as_date(zoo::as.yearmon("01/1994","%m/%Y")),
+    "MN" = lubridate::as_date(zoo::as.yearmon("01/2010","%m/%Y")),
+    "WI" = lubridate::as_date(zoo::as.yearmon("01/2009","%m/%Y")),
+    "DE" = lubridate::as_date(zoo::as.yearmon("01/1996","%m/%Y")),
+    "DC" = lubridate::as_date(zoo::as.yearmon("01/2010","%m/%Y")),
+    "MA" = lubridate::as_date(zoo::as.yearmon("01/2006","%m/%Y")),
+    "NY" = lubridate::as_date(zoo::as.yearmon("01/2001","%m/%Y")),
+    "VT" = lubridate::as_date(zoo::as.yearmon("01/1996","%m/%Y")),
+    "LA" = lubridate::as_date(zoo::as.yearmon("01/2016","%m/%Y")))
+
+state_xw <- read.csv(here::here("input/state_xwalk.csv")) %>% 
+  mutate(full_expansion_state = as.integer(
+    state %in%   c("AK","AZ","AR","CO","IL","IN","KY",
+                   "MD","MI","MT","NV","NH","NJ","NM",
+                   "ND","OH","OR","PA","RI","WA","WV")
+  ), 
+  substantial_expansion_state = as.integer(
+    state %in% c("CA","CT","HI","MN","WI") 
+  ),
+  mild_expansion_state = as.integer(
+    state %in% c("DE","DC","MA","NY","VT")
+  ),
+  non_expansion_state = as.integer(
+    state %in% c("AL","GA","FL","ID","KS","LA","ME",
+        "MS","MO","NE","NC","OK","SC","SD",
+        "TN","TX","UT","VA","WY")
+  )) %>% 
+  mutate(expansion_date = ifelse(non_expansion_state ==0 , 
+                                 lubridate::as_date(zoo::as.yearmon("01/2014","%m/%Y")),
+                                 NA)) %>% 
+  mutate(expansion_date = ifelse(state %in% names(other_expansion_dates), 
+                                  other_expansion_dates[as.character(state)],expansion_date)) %>% 
+  mutate(expansion_date = lubridate::as_date(expansion_date)) %>% 
+  mutate(expansion_year = lubridate::year(expansion_date))
+
+
+
+# Constructed for 2015-2018 for 19-64 year olds by state at http://statehealthcompare.shadac.org/
+df_calibration <- 
+  readxl::read_xlsx(here("input/acs-calibration/acs-calibration-2015-2018.xlsx")) %>% 
+  mutate(fips = as.numeric(paste0(fips))) %>% 
+  rename(state_name = stname) %>% 
+  left_join(state_xw,"fips")
+
+df_calibration %>% 
+  filter(data_type=="Number") %>% 
+  filter(state_name !="United States") %>% 
+    filter(type != "Insured" & type != "Private" & type !="Public") %>% 
+  mutate(coverage_type = ifelse(type == "Employer","01_esi_own",
+                                ifelse(type == "Individual","02_priv_oth",
+                                       ifelse(type=="Medicaid/CHIP" | type == "Medicare","03_public",
+                                              ifelse(type=="Uninsured","04_uninsured","NA"))))) %>% 
+    group_by(year,non_expansion_state,coverage_type) %>% 
+    summarise(test = sum(value)) %>% 
+    group_by(non_expansion_state,year) %>% 
+    mutate(pct = test /sum(test)) %>% 
+    select(-test) %>% 
+    spread(year,pct)
+
+```
+
+```{r calibrate model, eval = FALSE, echo = FALSE}
+# Targets are based on ACS tables for 19-64 year olds in ACS data as constructed at http://statehealthcompare.shadac.org/                    
+lst_targets_nonexp <- list(ESI = c(0.633,	0.638,	0.644,	0.650),
+                    NG = c(.0854,.0856,.0809,.0772),
+                    PUB = c(.180,.186,.185,.182),
+                    UNIN = c(.102,.0896,.0895,.0909))
+lst_targets_exp <- list(ESI = c(.608,.615,.620,.623),
+                    NG = c(.102,.103,.0936,.0894),
+                    PUB = c(.110,.112,.111,.110),
+                    UNIN = c(.180,.170,.175,.177))
+
+df_R <- 
+  read_rds(here("output/transition-probabilities/transition-probabilities-kaplan-meier.rds")) 
+
+# Calibrate Nonexpansion State Transition Matrix
+lst_targets = lst_targets_nonexp
+R = df_R$R_nonexp %>% select(-baseline) %>% as.matrix()
+p = lst_targets_nonexp %>% transpose() %>% pluck(1) %>% unlist()
+source(here("R/model-and-calibration-functions.R"))
+ggsave(p_calib, filename = here("output/model-calibration-to-acs/01_nonexpansion_calibration-results.png"))
+calibration_results %>%  
+  write_rds(here("output/model-calibration-to-acs/01_nonexpansion_calibration-results.rds"))
+
+# Calibrate Expansion State Transition Matrix
+lst_targets = lst_targets_exp 
+# This is actually correct -- want to use nonexpansion state matrix here as the expansion state matrix 
+# bakes in the initial impact of the policy.
+R = df_R$R_nonexp %>% select(-baseline) %>% as.matrix() 
+p = lst_targets_exp %>% transpose() %>% pluck(1) %>% unlist()
+source(here("R/model-and-calibration-functions.R"))
+ggsave(p_calib, filename = here("output/model-calibration-to-acs/01_expansion_calibration-results.png"))
+calibration_results %>%  
+  write_rds(here("output/model-calibration-to-acs/01_expansion_calibration-results.rds"))
+
+```
+
+
+```{r, echo = FALSE}
+
+df_R <- 
+  read_rds(here("output/transition-probabilities/transition-probabilities-kaplan-meier.rds")) 
+
+nonexp_calib <- read_rds(here("output/model-calibration-to-acs/01_nonexpansion_calibration-results.rds"))
+exp_calib <- read_rds(here("output/model-calibration-to-acs/01_expansion_calibration-results.rds"))
+
+# df_R$R_nonexp %>% select(-baseline) %>% as.matrix()
+# 
+
+nonexp_calib$df %>% 
+  mutate(expansion = "Nonexpansion") %>% 
+  bind_rows(
+    exp_calib$df %>% mutate(expansion = "Expansion")
+  ) %>% 
+  gather(measure,value,-type,-year,-expansion) %>% 
+  unite(type,measure,type) %>%
+  filter(!grepl("uncalibrated",type)) %>% 
+  spread(type,value) %>% 
+  arrange(expansion,year) %>% 
+  gt(rowname_col = "year") %>% 
+  cols_hide(2) %>% 
+  tab_row_group(group = "Expansion", rows = 1:4) %>% 
+  tab_row_group(group = "Nonexpansion",rows = 5:8) %>% 
+  fmt_number(columns = 3:10, decimals = 3) %>% 
+  tab_spanner(label = "Employer-Sponsored",columns = 3:4) %>% 
+  tab_spanner(label = "Non-Group",columns = 5:6) %>% 
+  tab_spanner(label = "Public", columns = 7:8) %>% 
+  tab_spanner(label = "Uninsured", columns = 9:10) %>% 
+  cols_label(
+    "ESI_calibrated" = "Calibrated",
+    "ESI_target" = "Target", 
+    "NG_calibrated" = "Calibrated",
+    "NG_target" = "Target", 
+    "PUB_calibrated" = "Calibrated",
+    "PUB_target" = "Target",
+    "UNIN_calibrated" = "Calibrated",
+    "UNIN_target" = "Target"
+  ) %>% 
+  gtsave(here("output/model-calibration-to-acs/01_acs-calibration-summary.png"))
+  
+```
+
+
+```{r setup simulation, echo = FALSE}
+
+#############################
+### Set Up Model Parameters
+#############################
+
+#!!! These files are written in 02_replicate-finkelstein-shepard-hendren.Rmd
+df_wtp_and_costs <-  read_rds(here("./output/demand-estimates/01_wtp-and-cost.rds"))
+df_uncert_wtp_and_costs <- read_rds(here("./output/demand-estimates/01_wtp-and-cost_uncertainty.rds"))
+df_uncert_wtp_and_costs_data <- read_rds(here("./output/demand-estimates/02_wtp-and-cost_uncertainty-data.rds"))
+
+# Get ex ante coverage distribution
+p_full <- 
+  df_calibration %>% 
+    filter(data_type=="Number") %>% 
+    filter(state_name !="United States") %>% 
+      filter(type != "Insured" & type != "Private" & type !="Public") %>% 
+    mutate(coverage_type = ifelse(type == "Employer","01_esi_own",
+                                  ifelse(type == "Individual","02_priv_oth",
+                                         ifelse(type=="Medicaid/CHIP" | type == "Medicare","03_public",
+                                                ifelse(type=="Uninsured","04_uninsured","NA"))))) %>% 
+      group_by(year,non_expansion_state,coverage_type) %>% 
+      summarise(test = sum(value)) %>% 
+      group_by(non_expansion_state,year) %>% 
+    filter(year==2018) 
+
+n_exp <-
+  p_full %>% 
+  ungroup() %>% 
+  filter(non_expansion_state == 0) %>% 
+  select(coverage_type, test) %>% data.frame() %>%
+  column_to_rownames(var = "coverage_type") %>% 
+  t() %>% as.list() %>% 
+  set_names(c("01_esi_own","02_priv_oth","03_public","04_uninsured"))
+ 
+n_nonexp <-
+  p_full %>% 
+  ungroup() %>% 
+  filter(non_expansion_state == 1) %>% 
+  select(coverage_type, test) %>% data.frame() %>%
+  column_to_rownames(var = "coverage_type") %>% 
+  t() %>% as.list() %>% 
+  set_names(c("01_esi_own","02_priv_oth","03_public","04_uninsured"))
+ 
+p_exp <- map(n_exp,~(.x / sum(unlist(n_exp))))
+p_nonexp <- map(n_nonexp,~(.x / sum(unlist(n_nonexp))))
+
+names(p_exp) <- paste0("p_",names(p_exp))
+names(p_nonexp) <- paste0("p_",names(p_nonexp))
+
+df_R_nonexp <- 
+  nonexp_calib$R_c  %>% 
+    data.frame() %>% 
+    set_names(names(p_nonexp)) %>% 
+    mutate(ex_ante = names(p_nonexp)) %>% 
+    gather(estimate, value, -ex_ante) %>% 
+    mutate(ex_post = estimate) %>% 
+    mutate(ex_post = gsub("R0_","",ex_post)) %>% 
+    mutate(param = paste0("R_",ex_ante,"_TO_",ex_post)) %>% 
+    select(param,value) 
+R_nonexp <- df_R_nonexp$value %>% set_names(df_R_nonexp$param)
+
+df_R_exp <- 
+  exp_calib$R_c  %>% 
+    data.frame() %>% 
+    set_names(names(p_nonexp)) %>% 
+    mutate(ex_ante = names(p_nonexp)) %>% 
+    gather(estimate, value, -ex_ante) %>% 
+    mutate(ex_post = estimate) %>% 
+    mutate(ex_post = gsub("R0_","",ex_post)) %>% 
+    mutate(param = paste0("R_",ex_ante,"_TO_",ex_post)) %>% 
+    select(param,value) 
+R_exp <- df_R_exp$value %>% set_names(df_R_exp$param)
+
+
+ # DD Estimate for Medicaid Expansion
+dd_lm <-  read_rds(here("output/dd-estimates/primary-results.rds"))[["dd_lm"]]
+dd_lm_ri <- read_rds(here("output/dd-estimates/primary-results.rds"))[["dd_lm_ri"]]
+df_DD <- 
+  dd_lm %>% 
+  select(ex_ante,starts_with("DD")) %>% 
+  na.omit() %>% 
+  gather(estimate, value, -ex_ante) %>% 
+  mutate(ex_post = estimate) %>% 
+  mutate(ex_post = gsub("DD_","",ex_post)) %>% 
+  mutate(param = paste0("DD_",ex_ante,"_TO_",ex_post)) %>% 
+  select(param,value)
+
+DD_nonexp <- df_DD$value %>% set_names(df_DD$param)
+DD_exp <- rep(0,length(DD_nonexp))
+names(DD_exp) <- names(DD_nonexp)
+
+
+# Define Parameter List object
+params_exp <- c(p_exp,R_exp,DD_exp)
+params_nonexp <- c(p_nonexp,R_nonexp,DD_nonexp)
+
+params <- 
+  c(p_nonexp,R_nonexp,DD_nonexp)
+
+#####################
+# MEDICAID
+#####################
+params$G_Cx <- 2721 # Medicaid Spending among control compliers
+params$G <- 3600 # Medicaid spending among treatment compliers
+params$OOP_Cx <- 569 # OOP spending among control compliers
+params$OOP_Tx <- 0 # OOP spending among treatment compliers
+params$sigma <- 3 # Coefficient of absolute risk aversion (needed only if we model I later)
+params$I <- 760 # pure insurance component -- note this can be further estimated.
+params$gov_incidence = 0.5
+params$fudge <-0
+params$v_i <- 0.65
+params$v_j <- 1.15
+
+
+###########
+# SUBSIDY
+###########
+params$pop_fpl = 150
+params$plan_type = "H"
+params$uninsured_oop_share = params$OOP_Cx / params$G_Cx
+params$phi = 0.25
+params$eta = 0.75
+params$plan_premium = 25
+params$welfare_weight = 0.5
+params$frac_uninsured_elig = 0.7
+
+# Parameters that are functions of other parameters
+params$takeup_coef = get_takeup_coef(params = params)
+params$cost_coef = get_cost_coef(params = params)
+
+subsidy_test <- simulate_subsidy(params)
+medicaid_test <- calculate_wtp_public(params)
+
+
+dist_lut <- c("qnorm" = "Normal",
+              "qunif" = "Uniform",
+              "qnorm01" = "Normal")
+
+
+params_lut <- 
+  c("G" = "Average cost to the government per Medicaid recipient",
+    "G_Cx" = "Medicaid spending among control compliers",
+    "C_H" = "Cost of marginal enrollee in private plan",
+    "OOP_Cx" = "OOP spending among control compliers",
+    "OOP_Tx" = "OOP spending among treatment compliers",
+    "sigma" = "Coefficient of absolute risk aversion (NOT CURRENTLY USED)",
+    "I" = "Pure insurance value of Medicaid",
+    "gov_incidence" = "Government incidence of uncompensated care",
+    "pop_fpl" = "FPL of recipients",
+    "uninsured_oop_share" = "Out-of-pocket share of expenditures among uninsured",
+    "phi" = "Moral hazard effect of insurance",
+    "eta" = "Social welfare weight",
+    "plan_premium" = "Subsidized monthly premium",
+    "subsidy_takeup" = "Subsidy take-up",
+    "v_i" = "Welfare weight for targeted income group",
+    "v_j" = "Welfare weight for high-income group",
+    "takeup" = "Fraction taking up subsidized coverage",
+    "frac_uninsured_elig" = "Fraction of uninsured population eligible for subsidies")
+
+
+# Get estimate of takeup uncertainty (SD of RI sampling distribution)
+p_se <- 
+    dd_lm_ri %>% 
+    group_by(replicate) %>% 
+    nest() %>% 
+    mutate(p = map(data,~(
+      .x %>% 
+        filter(!is.na(ex_ante)) %>% 
+        select(ex_ante,starts_with("p_Z1_T0"), starts_with("p_Z0_T0")) %>% 
+        na.omit() %>% 
+        tbl_df()  %>% 
+        # Need to get an overall distribution here, but using the 
+        # nontreated states for now.
+        select(value = p_Z0_T0) %>% 
+        mutate(param = insurance_sipp_lut)
+    ))) %>% 
+    select(-data) %>% 
+    unnest() %>% 
+      group_by(param) %>% 
+      summarize(value = sd(value)) %>% 
+    pull(value) %>% 
+    as.list() %>% 
+    set_names(paste0("p_",insurance_sipp_lut))
+
+# TK This will need to be updated to reflect the calibration posteriors.
+
+  df_R_se <- 
+    dd_lm_ri %>% 
+    group_by(replicate) %>% 
+    nest() %>% 
+    mutate(p = map(data,~(
+      .x %>% 
+        select(ex_ante,starts_with("R0")) %>% 
+        na.omit() %>% 
+        gather(estimate, value, -ex_ante) %>% 
+        mutate(ex_post = estimate) %>% 
+        mutate(ex_post = gsub("R0_","",ex_post)) %>% 
+        mutate(param = paste0("R_",ex_ante,"_TO_",ex_post)) %>% 
+        select(param,value)
+    ))) %>% 
+    select(-data) %>% 
+    unnest() %>% 
+    group_by(param) %>% 
+    summarize(value = sd(value)) 
+  R_se <- df_R_se$value %>% set_names(df_R_se$param)
+  R_se <- as.list(R_se)
+  
+  df_DD_se <- 
+    dd_lm_ri %>% 
+    group_by(replicate) %>% 
+    nest() %>% 
+    mutate(p = map(data,~(
+      .x %>% 
+        select(ex_ante,starts_with("DD")) %>% 
+        na.omit() %>% 
+        gather(estimate, value, -ex_ante) %>% 
+        mutate(ex_post = estimate) %>% 
+        mutate(ex_post = gsub("DD_","",ex_post)) %>% 
+        mutate(param = paste0("DD_",ex_ante,"_TO_",ex_post)) %>% 
+        select(param,value)
+    ))) %>% 
+    select(-data) %>% 
+    unnest() %>% 
+    group_by(param) %>% 
+    summarize(value = sd(value)) 
+  DD_se <- df_DD_se$value %>% set_names(df_DD_se$param)
+  DD_se <- as.list(DD_se)
+  
+qnorm01 <- function(x,...) pmax(0,pmin(1,qnorm(p = x,...)))
+### Probabilistic Sensitivity Analysis
+params_psa_vals <- 
+  
+params_psa <- params
+params_psa$gov_incidence = function(x) qunif(p = x, min = 0, max = 1) # Incidence on Government
+params_psa$eta = function(x) qunif(p = x, min =0.5, max = 1) # Marginal utility of 
+params_psa$v_i = function(x) qnorm(p = x, mean = params$v_i,sd = 0.02) # Welfare Weightfor targeted group
+params_psa$v_j = function(x) qnorm(p = x, mean = params$v_j,sd = 0.02) # Social Welfare for high-income group
+params_psa$phi = function(x) qnorm(p = x, mean = 0.25,sd = 0.05) # Moral Hazard Effects of Insurance
+params_psa$uninsured_oop_share =  function(x) qnorm(p = x, mean = 0.2, sd = 0.1) #function(x) pmax(0,pmin(1,qnorm(p = x, mean = 0.2,sd = 0.1))) # Share OOP for Uninsured
+params_psa$G_Cx =  function(x) qnorm(p = x, mean = params$G_Cx, sd = 20) # Medicaid Spending among control compliers
+params_psa$G = function(x) qnorm(p = x, mean = params$G, sd = 20) # Medicaid spending among treatment compliers
+params_psa$OOP_Cx = function(x) qnorm(p = x, mean = params$OOP_Cx, sd = 50)  # OOP spending among control compliers
+params_psa$OOP_Tx = function(x) qnorm(p = x, mean = params$OOP_Tx, sd = 0) # OOP spending among treatment compliers
+params_psa$sigma = function(x) qnorm(p = x, mean =  params$sigma, sd = 0) # Coefficient of absolute risk aversion (needed only if we model I later)
+params_psa$I = function(x) qnorm(p = x, mean =  params$I, sd = 200) # pure insurance component -- note this can be further estimated.
+params_psa$fudge = function(x) qnorm(p = x, mean =  params$fudge, sd = 0) # pure insurance component -- note this can be further estimated.
+params_psa$gov_incidence = function(x) qunif(p = x, min = 0, max = 1)
+params_psa$frac_uninsured_elig = function(x) qnorm(p = x, mean =  params$frac_uninsured_elig, sd = .05)
+#params_psa$welf_weight = function(x) qunif(p = x, min = 0, max = 1)
+    
+# Only use Halton draws for PSA parameters that aren't fixed.
+which_are_fns <- params_psa %>% map_lgl(~is.function(.x)) 
+
+```
+
+```{r, echo = FALSE}
+get_psa_values <- function(x) {
+
+  foo <- deparse(x)
+  parameter_name <- str_split(gsub("list\\(","",foo[1])," = ")[[1]][1]
+  dist = dist_lut[str_split(foo[2],"\\(")[[1]][1]]
+  
+    gsub(" ","",str_split(str_split(foo[2],"\\(|\\)")[[1]][2],",")[[1]]) %>% data.frame() %>% 
+    set_names("parameter") %>% 
+    separate(parameter,"=",into = c("parameter","value")) %>% 
+    mutate(from_params_list = as.integer(grepl("params",value))) %>% 
+    mutate(value = gsub("params\\$","",value))  %>% 
+    mutate(rowname = parameter_name) %>% 
+    filter(value != "x")  %>% 
+    mutate(value = ifelse(from_params_list==1,params[value],value)) %>% 
+    select(rowname,parameter,value) %>% 
+    spread(parameter,value) %>% 
+      mutate(distribution = dist) %>% 
+    select(-rowname) %>% 
+      select(distribution,everything()) %>% 
+      tbl_df() %>% 
+      mutate_at(vars(-distribution),list(~paste0(unlist(.))))
+}
+
+psa_values <- 
+  params_psa[which_are_fns] %>% 
+  map(~(
+  get_psa_values(.x)
+))  %>% bind_rows(.id = "rowname")
+
+tbl <- 
+  params %>% unlist() %>% data.frame() %>% 
+  rownames_to_column() %>% 
+  filter(rowname %in% names(params_lut)) %>% 
+  mutate(desc = as.character(params_lut[rowname])) %>% 
+  select(3,1,2) %>% 
+  left_join(psa_values,c("rowname")) %>% 
+  mutate_at(vars(3),function(x) as.numeric(paste0(x))) %>% 
+  mutate_at(vars(3),function(x) ifelse(x>1000,x/1000,ifelse(x<=1,round(x,3), round(x,1)))) %>%
+  filter(rowname!="sigma")
+  #mutate(desc = gsub("$","\\$",desc)) %>% 
+  #set_colnames(c("Parameter Description","Short Name","Value")) 
+  #tangram(., as.character=TRUE, style="lancet", caption="Model Parameters",id = "params")
+
+p_tbl <- 
+tbl %>% 
+  #filter(!grepl("NOT CURRENTLY",desc)) %>% 
+  gt(rowname_col = "Parameter Description") %>% 
+  tab_header(
+    title = "Model Parameters"
+  ) %>% 
+  tab_options(
+    table.width = pct(75)
+  ) %>% 
+  fmt_missing(columns = 3:8, missing_text = "") %>% 
+  cols_label(. = "Value", 
+             desc = "Parameter",
+             rowname = "Short Name",
+             distribution = "PSA Distribution",
+             mean = "Mean",
+             sd = "Standard Deviation",
+             max = "Maximum",
+             min = "Minimum") %>% 
+  tab_row_group(group = "Shared Parameters", rows = which(tbl$rowname %in% c("gov_incidence","v_i","v_j","pop_fpl","uninsured_oop_share"))) %>% 
+  tab_row_group(group = "Medicaid Parameters", rows = which(tbl$rowname %in% c("G_Cx","G","OOP_Cx","OOP_Tx","I"))) %>% 
+  tab_row_group(group = "Price-Fixed Subsidy Parameters", rows = which(tbl$rowname %in% c("plan_premium","frac_uninsured_elig","phi","eta")))
+
+gtsave(p_tbl, filename = here("./figures/03_simulate-subsidy-baseline-parameters.png"))
+```
+
+```{r, echo = FALSE}
+p_tbl_shared <- 
+  tbl %>% 
+  filter(rowname %in% c("gov_incidence","v_i","v_j","pop_fpl","uninsured_oop_share")) %>% 
+  #filter(!grepl("NOT CURRENTLY",desc)) %>% 
+  gt(rowname_col = "Parameter Description") %>% 
+  tab_header(
+    title = "Model Parameters Shared Across Strategies"
+  ) %>% 
+  tab_options(
+    table.width = pct(75)
+  ) %>% 
+  fmt_missing(columns = 3:8, missing_text = "") %>% 
+  cols_label(. = "Value", 
+             desc = "Parameter",
+             rowname = "Short Name",
+             distribution = "PSA Distribution",
+             mean = "Mean",
+             sd = "Standard Deviation",
+             max = "Maximum",
+             min = "Minimum") 
+
+gtsave(p_tbl_shared , filename = here("./figures/03_simulate-subsidy-baseline-parameters-shared.png"))
+
+
+p_tbl_medicaid <- 
+  tbl %>% 
+  filter(rowname %in% c("G_Cx","G","OOP_Cx","OOP_Tx","I")) %>% 
+  #filter(!grepl("NOT CURRENTLY",desc)) %>% 
+  gt(rowname_col = "Parameter Description") %>% 
+  tab_header(
+    title = "Model Parameters: Medicaid Expansion"
+  ) %>% 
+  tab_options(
+    table.width = pct(75)
+  ) %>% 
+  fmt_missing(columns = 3:8, missing_text = "") %>% 
+  cols_label(. = "Value", 
+             desc = "Parameter",
+             rowname = "Short Name",
+             distribution = "PSA Distribution",
+             mean = "Mean",
+             sd = "Standard Deviation",
+             max = "Maximum",
+             min = "Minimum") 
+
+gtsave(p_tbl_medicaid , filename = here("./figures/03_simulate-subsidy-baseline-parameters-medicaid.png"))
+
+
+
+p_tbl_subsidy<- 
+  tbl %>% 
+  filter(rowname %in% c("plan_premium","frac_uninsured_elig","phi","eta")) %>% 
+  bind_rows(data.frame(desc = "Coverage Takeup: Regression-Discontinuity Estimates", rowname = "beta", distribution="Multivariate Normal"))   %>% 
+  #filter(!grepl("NOT CURRENTLY",desc)) %>% 
+  gt(rowname_col = "Parameter Description") %>% 
+  tab_header(
+    title = "Model Parameters: Price-Linked Subsidy"
+  ) %>% 
+  tab_options(
+    table.width = pct(75)
+  ) %>% 
+  fmt_missing(columns = 3:8, missing_text = "") %>% 
+  cols_label(. = "Value", 
+             desc = "Parameter",
+             rowname = "Short Name",
+             distribution = "PSA Distribution",
+             mean = "Mean",
+             sd = "Standard Deviation",
+             max = "Maximum",
+             min = "Minimum") 
+
+gtsave(p_tbl_subsidy , filename = here("./figures/03_simulate-subsidy-baseline-parameters-subsidy.png"))
+
+```
+
+
+```{r, echo = FALSE}
+# Raw halton draw
+draws <- randtoolbox::halton(n = 1e4, dim = length(params_psa[which_are_fns])) %>% as.matrix()
+
+set.seed(123)
+
+halton_draws <- 
+  draws %>% 
+  data.frame() %>% 
+  magrittr::set_names(names(params_psa[which_are_fns]))  %>% 
+  pmap(list) %>% 
+  map(~(get_params(.x,params=params_psa[which_are_fns]))) %>% 
+  map(~(data.frame(.x))) %>% bind_rows() %>% 
+  pmap(list)
+
+params_halton <- 
+  halton_draws %>% 
+  map(~(c(.x,params_psa[!which_are_fns]))) 
+
+params_halton_transpose <- 
+  params_halton %>% 
+  transpose()
+
+params_halton_transpose$takeup_coef <- 
+  params_halton %>% 
+  map( ~get_takeup_coef(df=df_uncert_wtp_and_costs, params = .x))  
+  #map( ~get_takeup_coef(df=df_wtp_and_costs, params = .x))  
+
+params_halton_transpose$cost_coef <- 
+  params_halton %>% 
+  map( ~get_cost_coef(df=df_uncert_wtp_and_costs, params = .x))  
+  #map( ~get_cost_coef(df=df_wtp_and_costs, params = .x))  
+
+params_halton_final <- 
+  params_halton_transpose %>% 
+  transpose()
+
+# Simulate Subsidy
+df_psa <- 
+  params_halton_final %>% 
+  map(~(simulate_subsidy(.x))) %>% 
+  map(~(data.frame(.x))) %>% 
+  bind_rows(.id = "iteration")
+
+df_psa_medicaid <- 
+  params_halton_final %>% 
+  map(~(calculate_wtp_public(.x))) %>% 
+  map(~(data.frame(.x))) %>% 
+  bind_rows(.id = "iteration") %>% 
+  select(iteration, mvpf, mvpf_num, mvpf_denom) %>% 
+  mutate(strategy = "medicaid")
+
+df_est <- 
+  simulate_subsidy(params) %>% 
+  data.frame() %>% 
+  mutate(iteration = "0") %>% 
+  mutate(label_reformed = paste0(" Modeled Estimate:\n $",params$plan_premium,"/mo premium\n (MVPF = ",round(mvpf,3),")")) 
+
+df_est_medicaid <- 
+  calculate_wtp_public(params) %>% 
+  data.frame() %>% 
+  mutate(iteration = "0") %>% 
+  select(iteration, mvpf, mvpf_num, mvpf_denom) %>% 
+  mutate(strategy = "medicaid") %>% 
+  mutate(label_reformed = paste0(" Modeled Estimate:\n Medicaid \n (MVPF = ",round(mvpf,3),")"))  
+
+simulated_policy <- cov_sim(params)
+
+baseline_results <- 
+  simulated_policy %>% 
+  gather(key,value) %>% 
+  filter(grepl("esi_own|priv_oth|public|uninsured|subsidy_mvpf$|med_mvpf$",key))  %>% 
+  separate(key,into = c("policy","type1","type2","type3"),"_") %>% 
+  mutate(type2 = ifelse(grepl("mvpf",type1),"mvpf",type2)) %>% 
+  select(policy,type = type2, value) %>% 
+  spread(policy,value) %>% 
+  mutate(med = ifelse(type!="mvpf",med - baseline,med)) %>% 
+  mutate(subsidy = ifelse(type!="mvpf",subsidy - baseline,subsidy)) %>% 
+  mutate(type = factor(type,levels = c("esi","priv","public","uninsured","mvpf"), 
+                       labels = c("Employer-Sponsored Insurance","Private Non-Group","Public","Uninsured","Marginal Value of Public Funds"))) %>% 
+  arrange(type) %>% 
+  gt(rowname_col = "type") %>% 
+  tab_stubhead(label = "") %>% 
+  cols_label(baseline = "Baseline",
+             med = "Expand In-Kind Benefits\n(Medicaid)",
+             subsidy = "Price-Linked Subsidy") %>% 
+  fmt_number(columns = 1:3, decimals = 3) %>% 
+  fmt_missing(columns = 1:3,missing_text="") %>%
+  tab_row_group(group = "", rows = c("Marginal Value of Public Funds")) %>% 
+  tab_row_group(group = "Coverage Effects", rows = c("Employer-Sponsored Insurance","Private Non-Group","Public","Uninsured"))
+
+baseline_results %>% gtsave(filename = here("figures/99_baseline-results.png"))
+
+```
+
+```{r, eval = FALSE, echo = FALSE}
+lambda_lut <- c("lambda_1" = "\u3bB = 0.2",
+                "lambda_2" = "\u3bB = 0.9",
+                "lambda_3" = "\u3bB = 1.2")
+
+
+
+df_lambda <- 
+  data.frame(
+    mvpf_num = seq(0,4,.1)
+  ) %>% 
+  mutate(lambda_1 = 0.2,
+         lambda_2 = 0.9,
+         lambda_3 = 1.2) %>% 
+  gather(lambda,value,-mvpf_num) %>% 
+    mutate(lambda = lambda_lut[lambda]) %>% 
+  mutate(mvpf_denom = mvpf_num * 1 / value) %>% 
+  filter(mvpf_denom<4)
+
+p_tmp <- 
+  df_psa %>%
+  ggplot(aes(x = mvpf_num, y = mvpf_denom)) +
+  geom_line(data = df_lambda, aes(lty = lambda)) +
+  geom_dl(data = df_lambda, aes(label = lambda), method = list("angled.boxes", cex =0.9)) +
+  geom_point(alpha = 0.05,pch = 19) +
+  ggthemes::theme_clean() +
+  scale_y_continuous(limits = c(0,4), breaks = seq(0,4,.25), name = "Cost") +
+  scale_x_continuous(limits = c(0,4), breaks = seq(0,4,0.25), name = "Benefit") +
+  #geom_abline(intercept = 0, slope = 1 / .9, lty = 2)   +
+  #geom_abline(intercept = 0, slope = 1 / .2, lty = 3)   +
+  #eom_rug(sides = "tr", length = unit(0.01,"npc"))  +
+  geom_point(data = df_est, colour = "black", pch = 19) +
+  geom_text(data = df_est, colour = "black",aes(label = label_reformed),hjust =0,vjust=1,size = 3,fontface="italic",family = "Gill Sans") +
+  #annotate("text",x = 3,y = 2.75,label = "Policies with\nFavorable MVPF (>0.9)",size = 2,hjust =0,vjust =0) +
+  #annotate("text",y = 3.5,x = 2,label = "Policies with\nUnfavorable MVPF (<0.9)",size = 2,hjust = 0, vjust =0)  +
+  #ggtitle(paste0("Cost and Benefit Estimates (M=1,000)")) +
+  theme(text = element_text(family = "Gill Sans"),
+        plot.title = element_text(family = "Gill Sans", face = "plain"),
+        plot.background = element_blank(),
+        legend.position = "none") +
+  geom_point(data = df_psa_medicaid,colour = "blue", alpha = 0.05, pch = 2) + 
+  geom_point(data = df_est_medicaid, colour = "blue", pch = 2) +
+  geom_text(data = df_est_medicaid, colour = "blue",aes(label = label_reformed),hjust =1,vjust=0,size = 3,fontface="italic",family = "Gill Sans")
+
+
+p_tmp 
+p_tmp %>% ggsave(filename = here("./figures/03_cost-and-benefit-estimates.png"),height = 6, width = 6, units = "in")
+```
+
+
+```{r, eval = FALSE, echo = FALSE}
+df_psa_params <- 
+  params_halton_final %>% 
+  map(~(data.frame(.x) %>% 
+          rownames_to_column(var = "coef_name") %>% 
+          gather(key,value,takeup_coef,cost_coef) %>% 
+          unite(key,coef_name,key) %>% 
+          spread(key,value))) %>% 
+  bind_rows(.id = "iteration")
+
+df_psa_full <- 
+  # Subsidy
+  df_psa %>% tbl_df() %>% 
+    mutate(dWELF_SUBSIDY = mvpf_num, 
+           dCOST_SUBSIDY = mvpf_denom) %>% 
+    select(iteration,starts_with("dWELF"),starts_with("dCOST"),takeup,C_H) %>% 
+  # Medicaid
+  left_join(
+    df_psa_medicaid %>% tbl_df() %>% 
+    mutate(dWELF_MEDICAID = mvpf_num,
+           dCOST_MEDICAID = mvpf_denom) %>% 
+    select(iteration, starts_with("dWELF"),starts_with("dCOST")),
+    "iteration")  %>% 
+  # Parameters
+    left_join(df_psa_params, "iteration") %>% 
+      rename(psa_id = iteration) %>% 
+  select(-pop_fpl,-plan_type,-plan_premium,-contains("_coef")) %>% 
+  mutate(dWELF_NONE = 0, 
+         dCOST_NONE=0)
+
+df_psa_full %>% 
+  write_rds(here("output/psa-results.rds"))
+
+# df_psa_full  %>% 
+#   summarize_at(vars(-psa_id),mean)
+parm1<-'gov_incidence'
+parm2<-'uninsured_oop_share'
+range1<-c(0,1)
+range2<-c(0,1)
+
+```
+
+
+```{r, eval = FALSE, echo = FALSE}
+
+p1 <- OneWaySA(indata = df_psa_full %>% select(-contains("SDDUBSIDY")), outcome = "NHB", parm = parm1, range = range1, lambda = 0.8) + 
+  #ggtitle("One Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nMVPF Benchmark = 0.9") + 
+  theme(legend.position = "none") +
+ xlim(c(0,1.3))  + ylab("E[NWB]") + ylim(c(-1,1)) +
+  #theme(plot.title = element_text(family = "Gill Sans",face = "plain")) + 
+  theme(plot.title = element_blank()) + 
+  theme_tufte_revised() + 
+  theme(legend.position = "none", text = element_text(family = "Gill Sans"))+ 
+  scale_x_continuous(limits = c(0,1.3), breaks = seq(0,1,0.2))
+p1 %>% ggsave(filename = here("./figures/03_one-way-sensitivity_gov-incidence_lambda80.png"))
+
+p2 <- OneWaySA(indata = df_psa_full  %>% select(-contains("SUBSDDDIDY")), outcome = "NHB", parm = parm1, range = range1, lambda = .6) + 
+  #ggtitle("One Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nMVPF Benchmark = 0.2") + 
+  theme(legend.position = "none") +
+ xlim(c(0,1.3))  + ylab("E[NWB]") + ylim(c(-1,1)) +
+  theme(plot.title = element_text(family = "Gill Sans",face = "plain")) + 
+  theme_tufte_revised() + 
+  theme(legend.position = "none", text = element_text(family = "Gill Sans")) + 
+  scale_x_continuous(limits = c(0,1.3), breaks = seq(0,1,0.2))
+
+p2 %>% ggsave(filename = here("./figures/03_one-way-sensitivity_gov-incidence_lambda60.png"))
+
+
+p3 <-  OneWaySA(indata = df_psa_full  %>% select(-contains("SUBSDDDIDY")), outcome = "NHB", parm = "I", range = c(500,1200), lambda = .6) + 
+  #ggtitle("One Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nMVPF Benchmark = 0.2") + 
+  theme(legend.position = "none") +
+ xlim(c(500,1200))  + ylab("E[NWB]") + ylim(c(-1,1)) +
+  theme(plot.title = element_text(family = "Gill Sans",face = "plain")) + 
+  theme_tufte_revised() + 
+  theme(legend.position = "none", text = element_text(family = "Gill Sans")) + 
+  scale_x_continuous(limits = c(500,1400), breaks = seq(500,1400,200)) + xlab("Insurance Value of Medicaid")
+
+p3 %>% ggsave(filename = here("./figures/03_one-way-sensitivity_insurance-value-medicaid_lambda60.png"))
+
+
+p1  + ggtitle("One Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nMVPF Benchmark = 0.9")
+p2 + ggtitle("One Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nMVPF Benchmark = 0.6")
+```
+
+```{r, eval = FALSE, echo = FALSE}
+
+parm1<-'gov_incidence'
+parm2<-'I'
+range1<-c(0,1)
+range2<-c(100,1250)
+
+#cat("test")
+p1 <- 
+  TwoWaySA(indata=df_psa_full,outcome="NHB",parm1,parm2,range1,range2,lambda = 0.6) +
+  ggthemes::theme_tufte() +
+  scale_fill_manual(values = c("black","lightgrey","darkgrey")) +
+  #ggtitle("Two-Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nIncidence on Affluent (eta = 0.5) vs. \nLow-Income (eta = 1)\nMVPF Benchmark = 0.9")  +
+  ggthemes::theme_clean() +
+  ggtitle(paste0("\u3bB=0.6")) + 
+  xlab("Incidence of Uncompensated Care on Government (Share)") + 
+  ylab("Insurance Value of Medicaid")+ theme(legend.position = "bottom")
+
+p2 <- 
+  TwoWaySA(indata=df_psa_full,outcome="NHB",parm1,parm2,range1,range2,lambda = 0.9) +
+  ggthemes::theme_tufte() +
+  scale_fill_manual(values = c("black","lightgrey","darkgrey")) +
+  #ggtitle("Two-Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nIncidence on Affluent (eta = 0.5) vs. \nLow-Income (eta = 1)\nMVPF Benchmark = 0.9")  +
+  ggthemes::theme_clean() +
+  ggtitle(paste0("\u3bB=0.9")) + 
+  xlab("Incidence of Uncompensated Care on Government (Share)") + 
+  ylab("Insurance Value of Medicaid") + theme(legend.position = "bottom")
+
+
+p3 <- 
+  TwoWaySA(indata=df_psa_full,outcome="NHB",parm1,parm2,range1,range2,lambda = 1.2) +
+  ggthemes::theme_tufte() +
+  scale_fill_manual(values = c("black","lightgrey","darkgrey")) +
+  #ggtitle("Two-Way Sensitivity Analysis:\nGovernment Incidence of Uncompensated Care\nIncidence on Affluent (eta = 0.5) vs. \nLow-Income (eta = 1)\nMVPF Benchmark = 0.9")  +
+  ggthemes::theme_clean() +
+  ggtitle(paste0("\u3bB=1.2")) + 
+  xlab("Incidence of Uncompensated Care on Government (Share)") + 
+  ylab("Insurance Value of Medicaid")+ theme(legend.position = "bottom")
+
+p4 <- p1 + p2 + p3
+
+p4 %>% ggsave(filename = here("./figures/03_two-sensitivity_value-medicaid_gov-incidence.png"), width = 20, height =8, units="in")
+p4
+```
+
+```{r, eval = FALSE, echo = FALSE}
+lambda_range <- seq(0.0,1.5,0.05)
+p_ceac <- 
+  CEAC(indata=df_psa_full,lambda_range=lambda_range) + 
+  ggthemes::theme_clean() + 
+  scale_x_continuous(breaks = seq(0,2,0.1), limits = c(0,2)) + 
+  theme(legend.position = "none") + 
+  #ggtitle("Policy Acceptability Curve") + 
+  ylab("Pr(Cost-Effective)") + 
+  geom_vline(aes(xintercept = c(0.2)), lty=2) + 
+  annotate("text",x = 0.22, y = 1, label = "Social Welfare Function \n(\U3b4= 3) Benchmark",hjust =0,size =2) +
+  geom_vline(aes(xintercept = c(0.88)), lty=2) + 
+  annotate("text",x = 0.86, y = 1, label = "EITC\nBenchmark",hjust =1,size = 2) +
+  scale_colour_brewer(palette = "Set1")+
+  scale_colour_grey( start = 0, end = .5, na.value = "red") + 
+   theme(plot.title = element_text(family = "Gill Sans",face = "plain")) + 
+  theme_tufte_revised() + 
+  theme(legend.position = "none", text = element_text(family = "Gill Sans")) +
+    xlab(expression("Policy Adoption Threshold [Benefit/Cost]" (lambda))) 
+  
+  #scale_x_continuous(limits = c(0,1.3), breaks = seq(0,1,0.2))
+p_ceac + ggtitle("Policy Acceptability Frontier")
+p_ceac %>% ggsave(filename=here("./figures/03_policy-acceptability-frontier.png"), width = 6, height = 5, units = "in")
+```
+
+
+```{r, echo = FALSE}
+# TornadoDiag(indata = df_psa_full %>% select(-contains("NOSUBSIDY")), outcome = "NHB",lambda = 0.88) + 
+#   xlab("Expected NWB") + 
+#   geom_vline(aes(xintercept = 0), colour = "red")
+```
+
+```{r, eval = FALSE, echo = FALSE}
+indata <- df_psa_full 
+
+evppi.res <- list()
+
+for (lambda in seq(0.2,1.5,0.1)) {
+  # Get Outcome
+  #cat(lambda)
+  
+  lhs <- indata %>% select(psa_id,contains("dQALY"),contains("dCOST")) %>%
+    mutate(psa_id=row_number()) %>% 
+    reshape2::melt(id.vars='psa_id') %>%
+    tidyr::separate(variable,c("outcome","strategy"),"_") %>%
+    reshape2::dcast(psa_id+strategy~outcome) %>%
+    mutate(NHB = dQALY- dCOST * lambda ,
+           NMB = dQALY - dCOST *lambda)
+  nmb <- lhs %>% select(psa_id,strategy,NMB) %>% 
+    mutate(variable="NMB") %>% reshape2::dcast(psa_id~variable+strategy,value.var="NMB") %>% 
+    select(-psa_id)
+  
+  # Get Parameters
+  theta_tmp <- indata %>% select(-contains("dQALY"),-contains("dCOST"),
+                             -contains("NMB"),-contains("NHB"),-psa_id)
+  
+  # Get all the varying parameters
+  theta_var <- theta_tmp %>% summarise_all(sd) %>% 
+    gather(key,value) %>% 
+    filter(value>0) %>% 
+    pull(key)
+  
+  theta <- theta_tmp %>% select(theta_var)
+  
+  ## Number of simulations
+  n.sim        <- nrow(nmb)
+  ## Number of strategies
+  n.strategies <- ncol(nmb)
+  
+  ### Load required packages and functions
+  ## For column and row stats
+  # library(matrixStats)  
+  # ## To fit spline models
+  # library(mgcv) # version 1.8-17
+  ## Functions to calculate the conditional loss by computing the 
+  ## preposterior of each of the basis functions of the GAM model
+  #source("../reference/metamodeling/supplemental-material/GA_functions.R")
+  
+  ### Find optimal strategy (d*) based on the highest expected NMB
+  d.star <- which.max(colMeans(nmb))
+  #d.star
+  
+  ### Define the Loss matrix
+  loss <- nmb - nmb[, d.star]
+  
+  ### EVPI
+  evpi <- mean(rowMaxs(as.matrix(loss)))
+  #evpi
+  
+  #========================#
+  #### Single parameter ####
+  #========================#
+  ### Generate linear metamodel of one parameter for each opportunity loss
+  ## Selected parameter for EVPPI & EVSI
+  
+  evppi.res[[paste0(lambda)]] <- data.frame(parameter = names(theta)) %>% mutate(evppi = NA)
+  
+  for (sel.param in seq(ncol(theta))) {
+    
+    #cat("\n")
+    #cat(paste0("  ",sel.param))
+    
+    lmm1 <- gam(as.formula(paste("loss[, 1] ~ s(", colnames(theta)[sel.param], ")")),
+                data = theta)
+    lmm2 <- gam(as.formula(paste("loss[, 2] ~ s(", colnames(theta)[sel.param], ")")),
+                data = theta)
+    lmm3 <- gam(as.formula(paste("loss[, 3] ~ s(", colnames(theta)[sel.param], ")")),
+                data = theta)
+    #lmm4 <- gam(as.formula(paste("loss[, 4] ~ s(", colnames(theta)[sel.param], ")")),
+                #data = theta)  
+    
+    #### Compute EVPPI on one parameter ####
+    ## Compute estimated losses
+    loss.hat <- cbind(lmm1$fitted, lmm2$fitted, lmm3$fitted)#,lmm4$fitted)
+    
+    ### Apply EVPPI equation
+    evppi.res[[paste0(lambda)]][sel.param,]$evppi <- mean(rowMaxs(loss.hat))
+    #cat("\n")
+  }
+} 
+df_evppi <- evppi.res %>% bind_rows(.id = "lambda") %>% tbl_df() %>% 
+  mutate(paramter = paste0(parameter)) %>% 
+  group_by(parameter) %>% 
+  mutate(max_evppi = max(evppi)) %>% 
+  filter(max_evppi > 0.005) %>% 
+  ungroup()
+
+df_evppi_label <- 
+  df_evppi %>% 
+  select(parameter) %>% 
+  unique() %>% 
+  mutate(parameter = paste0(parameter)) %>% 
+  mutate(tmp = params_lut[parameter]) %>% 
+  mutate(label = paste0(parameter,": ",tmp))
+  
+library(RColorBrewer)
+myColors <- rep("black",nrow(df_evppi_label)) #brewer.pal(12,"Set3")
+names(myColors) <- df_evppi_label$parameter
+colScale <- scale_colour_manual(name = "",values = myColors, labels = df_evppi_label$label)
+#lineScale <- scale_linetype_manual(values = seq(1,nrow(df_evppi_label), labels = df_evppi_label$label))
+
+p_evppi <- 
+  df_evppi %>% 
+  #filter(lambda>0.8 & lambda<1.2) %>% 
+  ggplot(aes(x = lambda, y = evppi, group = parameter, colour = parameter)) + 
+  geom_line() + 
+  # geom_text(data = 
+  # evppi.res %>% bind_rows(.id = "lambda") %>% filter(evppi>0), aes(label = round(evppi,3)),size =3) +
+  
+  theme(legend.position = "none") +
+  theme_tufte_revised() + #theme(legend.position = "none") + 
+  ylab("Expected Value of Partial Perfect Information") + 
+     xlab(expression("Policy Adoption Threshold [Benefit/Cost]" (lambda)))  + 
+  theme(text = element_text(family = "Gill Sans")) +
+  geom_dl(aes(label = parameter), method = list("top.bumpup",cex =0.9,fontfamily = "Gill Sans"))  + 
+  colScale + 
+  theme(legend.position = "bottom")
+  #ggtitle("Expected Value of Perfect Information by Parameter")
+p_evppi + ggtitle("Degree of Parameter Leverage in Affecting Policy Adoption,\nby MVPF Threshold Value")
+p_evppi %>% ggsave(filename = here("./figures/03_evppi.png"),height = 6, width = 12, units = "in")
+```
+
+
+
+

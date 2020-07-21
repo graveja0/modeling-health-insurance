@@ -22,6 +22,7 @@ run_dd_results = FALSE
 if (run_dd_results) {
 dd_lm <- 
   df %>% 
+  filter(inc_pov <=1.5) %>% 
   fit_transitions_dd(outcome = insurance_type,
                      id = idnumber,
                      time = month,
@@ -34,6 +35,7 @@ dd_lm <-
   )
 
 dd_lm_ri <- df %>%
+  filter(inc_pov <= 1.5) %>% 
     ri_permute(m = 1000, 
                treatment = expansion_state, 
                cluster = state, 
@@ -54,6 +56,7 @@ dd_lm_ri <- df %>%
   list(dd_lm = dd_lm, 
        dd_lm_ri = dd_lm_ri)  %>% 
     write_rds(here("output/dd-estimates/primary-results.rds"))
+
 }
 
 results <- 
@@ -164,13 +167,90 @@ transprob_result_formatted <-
   select(-row) %>% 
    set_colnames(c("group",insurance_lut))
 
+get_transitions <- function(df) {
+  df %>% 
+    select(ex_ante,starts_with("R0")) %>% 
+    na.omit() %>% 
+    gather(estimate, value, -ex_ante) %>% 
+    mutate(ex_post = estimate) %>% 
+    mutate(ex_post = gsub("^RR_","",ex_post)) %>% 
+    select(ex_ante,ex_post,value)
+}
+
+# Transition Probability Matrix Result
+R_result_obs <- 
+  dd_lm %>% 
+  get_transitions() %>% 
+  unite(group,ex_ante,ex_post,sep = "_TO_")
+
+R_result_inf <- 
+  dd_lm_ri %>% 
+  group_by(replicate) %>% 
+  do(get_transitions(df=.) %>% 
+  unite(group,ex_ante,ex_post,sep = "_TO_")) 
+  
+R_result <- 
+  R_result_obs %>% 
+  left_join(get_quantile_ranking(obs = R_result_obs, inf = R_result_inf),"group") %>% 
+  left_join(get_pvalue(obs = R_result_obs, inf = R_result_inf),"group")
+
+R_result_formatted <-
+ R_result %>% 
+  select(group, a_transprobl = value, b_p_value = p_value) %>% 
+  gather(row,value,-group) %>% 
+  arrange(group) %>% 
+  mutate(value = ifelse(grepl("^a_",row),format(round(value,4),nsmall=3),
+                        ifelse(value>0.01,paste0("(p=",format(round(value,2),nsmall=1),")"),
+                               paste0("(p< 0.01)")))) %>% 
+   separate(group,into = c("ex_ante","ex_post"),sep = "_TO_") %>% 
+   spread(ex_post,value) %>% 
+  mutate(ex_ante = ifelse(grepl("^a_",row),insurance_lut[ex_ante],"")) %>% 
+  select(-row) %>% 
+   set_colnames(c("group",insurance_lut))
 
 ```
 
 ```{r}
+library(gtable)
+
+# Transition Probabilities
+
+tmp <- ex_ante_shares %>% 
+  cbind(R_result_formatted[,-1])  %>% 
+  na.omit()
+# tmp[c(2,4,6,8),1] = ""
+
+R_table <- 
+  tmp  %>% gt(rowname_col = "group") %>% 
+    tab_source_note(
+    source_note = "Graves, McWilliams and Hatfield (2019)"
+  ) %>% 
+  tab_stubhead(label = "") %>% 
+  cols_label(treated = "Expansion",
+             control = "Nonexpansion") %>% 
+  fmt_missing(columns = 1:6, missing_text = "") %>% 
+  tab_spanner(columns = 3:6, label = "Transition Probability (Control States)") %>% 
+   tab_spanner(columns = 1:2, label = "Ex Ante Share")
+
+R_table %>% gtsave(filename = here("figures/99_transprob-results.png"))
+  
 tmp <- ex_ante_shares %>% 
   cbind(transprob_result_formatted[,-1]) 
+tmp[c(2,4,6,8),1] = ""
 
-tmp %>% kable()
+dd_table <- 
+  tmp  %>% gt(rowname_col = "group") %>% 
+    tab_source_note(
+    source_note = "Graves, McWilliams and Hatfield (2019)"
+  ) %>% 
+  tab_stubhead(label = "") %>% 
+  cols_label(treated = "Expansion",
+             control = "Nonexpansion") %>% 
+  fmt_missing(columns = 1:6, missing_text = "") %>% 
+  tab_spanner(columns = 3:6, label = "Change in Transition Probability") %>% 
+  tab_spanner(columns = 1:2, label = "Ex Ante Share")
+
+dd_table %>% gtsave(filename = here("figures/99_dd-results.png"))
+  
+
 ```
-

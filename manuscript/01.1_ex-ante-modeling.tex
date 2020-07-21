@@ -1,0 +1,1101 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames*,x11names*}{xcolor}
+%
+\documentclass[
+  10pt,
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={A Unified Approach for Ex Ante Policy Evaluation},
+  pdfauthor={John Graves, Vanderbilt University},
+  colorlinks=true,
+  linkcolor=Maroon,
+  filecolor=Maroon,
+  citecolor=Blue,
+  urlcolor=blue,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+\usepackage{setspace}
+\doublespacing
+\usepackage{amsmath}
+
+\title{A Unified Approach for Ex Ante Policy Evaluation}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{Evaluating Mechanisms for Universal Health Coverage}
+\author{John Graves, Vanderbilt University}
+\date{}
+
+\begin{document}
+\maketitle
+
+\centering
+\raggedright
+
+\singlespacing
+
+I articulate an approach for quantifying the expected welfare
+consequences from economic and social policy decisions made under
+evidentiary uncertainty. Through an application to U.S. health reform
+policy, I demonstrate that embedding comparative welfare analyses within
+an ex ante model of counterfactual policy changes can both inform
+current policy adoption choices and help refine future research
+priorities. Specifically, using a generalized reduced-form model of
+health insurance reform, I simulate the effects of further expansion of
+coverage in the U.S. via in-kind public programs (e.g., Medicaid) or
+cash assistance to subsidize the purchase of private plans. Drawing on
+metamodeling and value-of-information (VOI) methods, I then evaluate the
+expected welfare loss from policy decisions based on current knowledge
+and given considerable structural, estimation and sampling uncertainty
+in model parameters. The findings provide meaningful guidance for both
+policymakers and researchers. Given current information, a targeted
+Medicaid expansion to remaining uninsured individuals less than 150\% of
+the federal poverty line (FPL) yields the highest expected net welfare
+benefit provided society values a redistributive policy consistent with
+a marginal value of public funds (MVPF, or the ratio of policy benefits
+to costs) of 0.6 or lower. Above this threshold, a price linked subsidy
+(\$25/month premium) to low income uninsured populations yields the
+largest expected welfare gain. However, the desirability of this policy
+erodes if society prefers policies with MVPF above 1. Not surprisingly,
+there is considerable uncertainty in these assessments. Assessment of
+the VOI reveals that to reduce this uncertainty, future research should
+focus on refining our understanding of (1) the insurance value of
+Medicaid, especially to those not currently enrolled; (2) the role of
+informational and behavioral frictions in affecting willingness-to-pay
+parameters; (3) the incidence of uncompensated care; and (4) the health
+care costs of marginal enrollees in subsidized private plans.
+
+\doublespacing
+
+\newpage
+
+\hypertarget{introduction}{%
+\section{Introduction}\label{introduction}}
+
+\setlength\parindent{24pt}
+
+This study articulates an approach for quantifying the opportunity cost
+of social policy decisions made under evidentiary uncertainty. Through
+an application to U.S. health reform policy, I draw on recent advances
+in public finance and decision theory to embed comparative welfare
+analyses within a counterfactual policy projection model. By estimating
+the expected welfare loss from decisions based on current
+knowledge---which are possibly incorrect, given social preferences and
+incomplete information---I show how the approach can inform current
+policy debates and help refine priorities for future research.
+
+The specific setting is one in which literature- and theory-based
+parameters inform counterfactual projections of social policy changes.
+This type of analysis---which I will call \emph{ex ante policy
+evaluation}---is common worldwide. In the United States, models
+developed by the Congressional Budget Office (CBO) shape the trajectory
+and outcomes of federal policymaking. Outside of the U.S., entities like
+the National Institute of Health Care Excellence commission models to
+determine coverage and reimbursement policy for government-sponsored
+health programs. Other public- and private-sector institutions have
+developed simulation models to project the consequences of changes to
+tax and transfer policy, education policy, and food policy, among others
+(Avery et al. 2019; Ballas, Clarke, and Wiemers 2006; Basu, Seligman,
+and Bhattacharya 2013; Cordova et al. 2013; Decoster et al. 2010;
+Feenberg and Coutts 1993; Kristensen et al. 2014; Mozaffarian et al.
+2018; Smith et al. 2006; Sutherland and Figari 2013; Szab\a'o,
+Guly\a'as, and T\a'oth 2008)
+
+Despite the important role played by ex ante evaluation in the
+policymaking process, scant formal attention has been paid to its
+theory, design and integration within the broader economic research
+enterprise.\footnote{The one notable exception is health technology
+  assessment, where rigorous standards for conduct, methods and
+  reporting have been developed by the Panel on Cost-Effectiveness in
+  Health and Medicine (Sanders et al. 2016; Weinstein et al. 1996).} To
+the extent there are explicit linkages, they usually take the form of
+simple, back-of-the-envelope counterfactual policy simulations that
+conclude empirical research manuscripts. Rarely do these exercises draw
+on a formal approach to comparative welfare analysis (Hendren and
+Sprung-Keyser 2019). Even more rarely do they grapple rigorously with
+the role of estimation, sampling and structural model uncertainty in
+guiding policy recommendations and the direction of future research.
+
+These and other shortcomings extend to formal policy simulation models
+as well. For example, models often produce an array of welfare-relevant
+outputs and leave it to policymakers to weigh these separate factors
+when making decisions (Finkelstein, Hendren, and Shepard 2019a;
+Finkelstein, Hendren, and Luttmer 2015a).\footnote{This is particularly
+  true in U.S. health policy, where federal policy decisions based on
+  cost-effectiveness are prohibited through both legislation and
+  administrative rulemaking. But even absent a specific legislative or
+  regulatory decree, the CBO and other modelers have generally avoided
+  producing overall welfare assessments.} Moreover, while models often
+draw on standard economic theory and a shared evidence base, the
+underlying evidence is estimated with uncertainty (and possibly with
+bias) and is not always in uniform agreement. Models also differ in
+their underlying structure, data inputs and assumptions. Finally, the
+simulation process is often opaque, making it difficult for researchers
+to understand whether and how their work can inform modeling efforts.
+Put simply, few economists have a concrete sense of how their research
+can impact policy modeling done by the CBO and others---nor is it even
+clear whether current research is aligned around questions of highest
+importance to informing policy decisions.
+
+I propose a unified approach to ex ante policy evaluation that addresses
+many of the above shortcomings. The approach adds rigor to all stripes
+of ex ante evaluation. That is, deployment of the theories and methods
+discussed herein can add new and richer insights to counterfactual
+policy simulations that accompany empirical research studies, and to
+standalone policy simulation models used by the CBO and others.
+
+The primary theoretical contribution combines comparative welfare
+analysis based on the Marginal Value of Public Funds (MVPF; i.e., the
+ratio of incremental policy benefits to costs) with approaches for
+quantifying the welfare loss from policy decisions based on current
+(incomplete) information (Finkelstein, n.d.; Hendren 2016a; Hendren and
+Sprung-Keyser 2019; Parmigiani and Inoue 2009a; Schlaifer and Raiffa
+1961a). Intuitively, at a given policy adoption threshold (e.g., a MVPF
+value of 0.8, below which a policy might be desirable but above which it
+may not), model parameter uncertainty may or may not affect policy
+adoption decisions. If decisions are insensitive to parameter variation
+based on bounds and uncertainty set by current knowledge, then the value
+of research to obtain further information on uncertain parameters is
+low---that is, it is not worth additional effort to reduce information
+uncertainty since the same policy decision would be made today as it
+would if we had better information. If policy adoption decisions are
+sensitive to uncertainty, however, I show that the MVPF can serve as a
+lens through which we can quantify the expected welfare loss from policy
+adoption choices based on current knowledge. I also show how to
+decompose model outputs to isolate how specific model parameters
+contribute to the overall value of information across a range of policy
+adoption thresholds.
+
+This study's second major contribution is an application of these
+methods to U.S. health reform policy. Specifically, I calibrate a
+discrete time and choice model of health insurance take-up to
+investigate further coverage expansion via in-kind government-sponsored
+programs (e.g., Medicaid) versus using subsidies to facilitate the
+purchase of private plans. The model itself relies on a relatively
+circumscribed set of literature-based reduced form parameters that
+capture coverage take-up decisions as well as valuation of in-kind
+vs.~subsidized health insurance benefits (Graves, McWilliams, and
+Hatfield 2020; Finkelstein, Hendren, and Shepard 2019b; Finkelstein,
+Hendren, and Luttmer 2019). As such, the underlying model fits within
+the recent ``sufficient statistics'' tradition in applied economics
+(Chetty 2009)---and provides a template for researchers who wish to
+simulate the comparative welfare consequences of counterfactual changes
+to U.S. health insurance policy without the need for a detailed
+microsimulation model.
+
+By specifying model parameters in terms of their expected value
+\emph{and} their underlying uncertainty, I conduct large-scale
+sensitivity analyses by re-estimating model outcomes based on draws from
+the joint distribution of parameters. The parameter values and welfare
+estimates of this exercise are the primary inputs into a
+``metamodel''---that is, a regression model of how model outcomes vary
+as a function of input parameters. Metamodeling facilitates efficient
+estimation of the expected welfare loss from policy decisions based on
+current information. Given the nonlinearity of many policy simulation
+models, I explore different approaches to metamodeling including linear
+regression and artifical neural networks (ANNs).
+
+The results of this exercise yield valuable insights for policymaking
+and future research. First, given current information, a targeted
+Medicaid expansion to remaining uninsured individuals less than 150\% of
+the federal povery line (FPL) yields the highest expected net welfare
+benefit provided society values a redistributive policy consistent with
+a MVPF of 0.6 or lower. Above this threshold, a price linked subsidy
+(\$25/month premium) for low income uninsured populations yields the
+largest expected welfare gain. However, the desirability of this policy
+erodes at MVPF thresholds above 1.
+
+Not surprisingly, there is considerable uncertainty in these
+assessments. At MVPF adoption decision thresholds between 0.5 and 0.7,
+the parameter with greatest leverage is the insurance value of Medicaid.
+Current knowledge based on estimates derived from the Oregon Health
+Insurance Experiment may understate this parameter if Medicaid provides
+an option value to those not currently eligible, but who could become
+eligible if they experience an unexpected health shock (Finkelstein,
+Hendren, and Luttmer 2015b). Informational and behavioral frictions are
+also not fully captured in existing literature-based willingness-to-pay
+estimates, and these biases would also feed through this highly
+important parameter. However, if social preferences are consistent with
+adopting policies with an MVPF above 0.7, then future research should
+instead prioritize reducing information uncertainty in parameters that
+summarize the incidence of uncompensated care and the costs of marginal
+enrollees in private plans.
+
+The remainder of this paper is structured as follows. The next section
+lays out the theoretical foundations for summarizing the benefits,
+costs, and the expected welfare loss from policy decisions based on
+current information. This foundation facilitates a shared estimation
+framework for quantifying the value of information that applies to both
+empirical research studies and large scale policy microsimulation
+models. Section TK outlines the assumptions and structure of the model
+used in the application. A methods section then follows with specifics
+on estimation of the value of information based on metamodeling. A
+results section summarizes specific insights based on the application,
+and a final section concludes.
+
+\hypertarget{theory}{%
+\section{Theory}\label{theory}}
+
+We begin by defining summary measures of policy benefits
+\(W(\boldsymbol{\pi},\alpha)\) and costs \(C(\boldsymbol{\pi},\alpha)\)
+as outputs from either an empirical research study or a microsimulation
+model. These measures are defined for each policy strategy
+\(\alpha \in \boldsymbol{\alpha}\) and based on model parameters
+\(\boldsymbol{\pi}\).
+
+Summary measures of benefits and costs are the key ingredients for the
+Marginal Value of Public Funds (MPVF) developed in a series of studies
+by Hendren (Hendren and Sprung-Keyser 2019; Hendren 2016b). In its most
+basic form the MVPF is the ratio of policy benefits to costs:
+
+\[
+MVPF(\boldsymbol{\boldsymbol{\pi},\alpha}) = \frac{W(\boldsymbol{\pi},\alpha)}{C(\boldsymbol{\pi},\alpha)}
+\]
+
+The MVPF measures the marginal value of an additional dollar spent on a
+policy. That is, the MVPF quantifies how the welfare benefits accrued by
+implementing the policy compare to the costs of adopting it. These costs
+could be mechanical (e.g., the dollar value of a subsidy or cash
+transfer) and/or the result of economic frictions brought about through
+policy implementation (e.g., behavioral changes that result in changes
+in labor force participation, tax revenue, etc.). From a normative
+standpoint, however, the MVPF itself is agnostic: it simply measures the
+ratio of benefits to costs and does not make affirmative statements
+about whether a policy is ``worth it.''
+
+To assess the desirability of policy adoption is useful to consider a
+benchmark threshold (\(\lambda = MVPF_{bench}\)) summarizing society's
+willingness to implement a policy. This threshold value could simply be
+based on a MVPF of 1 or, if society values some redistributive
+consequence of the policy, could be set based on a value less than one.
+For example, Finkelstein, Hendren, and Shepard (2019b) make comparative
+assessments of health insurance subsidization policies by specifying a
+social welfare function over Constant Relative Risk Aversion (CRRA)
+utility and a defined coefficient of risk aversion. This results in
+\(\lambda = 0.2\). But researchers do not necessarily have to specify
+the structure of the social welfare function to define a decision-making
+benchmark. A value tied to an existing policy with strong social support
+could also suffice. For instance, Finkelstein, Hendren and Shepard
+(2018) also consider a benchmark (\(\lambda = 0.88\)) based on the MVPF
+of the Earned Income Tax Credit (EITC)---a popular means-tested cash
+transfer program. Finally, Hendren (2019) argues for the use of
+efficient welfare weights that project the welfare costs and benefits of
+any specific policy into the MVPF of a tax transfer between the affected
+populations.
+
+We next define the \textbf{net welfare benefit}, or the policy's
+benefits net of its costs scaled by \(\lambda\)
+
+\[
+NWB(\boldsymbol{\pi},\alpha,\lambda) = W(\boldsymbol{\pi},\alpha) - \lambda \cdot C(\boldsymbol{\pi},\alpha) 
+\] Intuitively, policies where \(NWB \geq 0\) indicate situations where
+the MVPF is equal to or less than \(\lambda\).
+
+\hypertarget{the-opportunity-cost-of-imperfect-information}{%
+\subsection{The Opportunity Cost of Imperfect
+Information}\label{the-opportunity-cost-of-imperfect-information}}
+
+It is important to emphasize that this study does not take a stance on
+the specific value of \(\lambda\). Rather, both the theory and results
+emphasize that the utility of reducing information uncertainty in policy
+evaluation may, in many applications, vary over a range of values for
+\(\lambda\). This is readily apparent by noting that the NWB varies as a
+function of \(\lambda\).
+
+Relatedly, NWB also depends on model parameters \(\boldsymbol{\pi}\),
+which are often estimated (or assumed) with uncertainty. Uncertainty
+could derive from sampling or estimation error, or because the parameter
+values are unexplored in the literature and an educated guess must be
+made. Alternatively, uncertainty could derive from potential
+heterogeneity in model parameters across welfare-relevant dimensions
+(e.g., income, education, geography) or there could be uncertainty
+around whether literature-based parameters (e.g., elasticities) can
+reasonably extrapolate to the setting, context and structure of the
+policy question at hand.
+
+Uncertainty in the ``true'' value of \(NWB\) means that a decision made
+based on a fixed set of parameter values could be incorrect for a given
+value of \(\lambda\). That is, we might conclude that a policy either
+does or does not pass a cost-benefit test, but if we had more
+information we would come to the opposite conclusion. In short, given
+social preferences, policy adoption decisions based on current
+information often come with an opportunity cost of making the wrong
+decision.
+
+We next define the expected welfare gain that would accrue with perfect
+information on uncertain parameters. Without considering uncertainty,
+our policy decision is based on choosing the policy strategy that
+maximizes NWB with parameters centered on their expected value, i.e.,
+\(\max_{\boldsymbol{\alpha}} E_{\boldsymbol{\pi}}[NWB(\boldsymbol{\alpha},\boldsymbol{\pi},\lambda)]\).
+Imagine, however, that we could implement a hypothetical study that
+eliminates all uncertainty, such that the policy adoption decision is
+based on
+\(\max_{\boldsymbol{\alpha}} NWB(\boldsymbol{\alpha},\boldsymbol{\pi},\lambda)\).
+
+In practice, we may not know parameters with certainty but we can
+specify their distribution. In that case we can take the expectation
+over \(\boldsymbol{\pi}\) so that with perfect information the expected
+(net) welfare gain is expressed as
+\(E_{\boldsymbol{\pi}} \big [ \max_{\boldsymbol{\alpha}} NWB(\boldsymbol{\alpha},\boldsymbol{\pi},\lambda) \big ]\).
+
+Decision theory defines the difference between these two quantities as
+the \emph{expected value of perfect information} (EVPI)---that is, it is
+the expected net welfare gain from a hypothetical study that could
+eliminate all model parameter uncertainty (Schlaifer and Raiffa 1961b;
+Parmigiani and Inoue 2009b; Claxton and Sculpher 2006):
+
+\begin{equation}
+\label{eq:evpi}
+EVPI(\boldsymbol{\alpha},\boldsymbol{\pi},\lambda) =  E_{\boldsymbol{\pi}} \big [ \max_{\boldsymbol{\alpha}} NWB(\boldsymbol{\alpha},\boldsymbol{\pi},\lambda) \big ] - \max_{\boldsymbol{\alpha}} E_{\boldsymbol{\pi}}[NWB(\boldsymbol{\alpha},\boldsymbol{\pi},\lambda)]
+\end{equation}
+
+Note that the second term in equation \ref{eq:evpi} is simply the
+expected net welfare benefit of the dominant policy strategy when
+parameters are centered on their expected value. We will call this
+strategy \(\alpha^*\). We can therefore re-write the above expression
+as:
+
+\[
+EVPI(\boldsymbol{\alpha},\boldsymbol{\pi},\lambda) =  E_{\boldsymbol{\pi}} \big [ \max_{\boldsymbol{\alpha}} NWB(\boldsymbol{\alpha},\boldsymbol{\pi},\lambda) \big ] -  E_{\boldsymbol{\pi}}[NWB(\alpha^*,\boldsymbol{\pi},\lambda)]
+\] rearranging gives us \[
+=  E_{\boldsymbol{\pi}} \big [ \max_{\boldsymbol{\alpha}} \overbrace{ NWB(\boldsymbol{\alpha},\boldsymbol{\pi},\lambda)  -  NWB(\alpha^*,\boldsymbol{\pi},\lambda)} ^{L(\boldsymbol{\alpha},\boldsymbol{\pi},\lambda)} \big ] 
+\]
+
+\[
+= E_{\boldsymbol{\pi}} \big [\max_{\boldsymbol{\alpha}}  L(\boldsymbol{\alpha},\boldsymbol{\pi},\lambda) \big ]
+\] Where \(L(\boldsymbol{\alpha},\boldsymbol{\pi},\lambda)\) is a loss
+function specifying the welfare loss from adopting a given strategy
+relative to the NWB of the dominant strategy selected using parameters
+centered at their expected value (i.e., \(\alpha^*\)) and for a given
+value of \(\lambda\).
+
+\hypertarget{graphical-intuition-for-the-evpi}{%
+\subsection{Graphical Intuition for the
+EVPI}\label{graphical-intuition-for-the-evpi}}
+
+Figure \ref{fig_voi_intuition} provides graphical intuition for the
+value of information as conveyed through the EVPI. Each scenario plots
+(as a solid black point) the estimated welfare benefit and cost outcomes
+from the ``baseline'' model run (i.e., with all parameters centered at
+their expected value). The grey points correspond to different model
+realizations under draws of the parameters from their joint
+distribution. This ``cloud'' of points visualizes the degree to which
+welfare cost and benefit outputs are sensitive to the particular values
+of parameters used.
+
+As can be seen in the figure, the value of information from reducing
+parameter uncertainty depends on how we define \(\lambda\). In each
+plot, the slope of a ray from the origin has slope \(1/\lambda\). Thus,
+points below each line correspond to combinations of policy benefits and
+costs that pass the defined cost-benefit test, while those above do not
+pass the test.
+
+As seen in Scenario A, when \(\lambda\) is low (i.e., \(\lambda_1\))
+there little value in obtaining new information: the same decision (to
+adopt the policy) would be made even if we allowed the model parameters
+to vary over their entire joint distribution. By comparison, at higher
+thresholds (\(\lambda_2\)) the value of information is high: the
+``cloud'' of points straddles the threshold line, indicating that
+different decisions would be made across a series of parameter draws.
+
+By comparison, in Scenario B there is still variation in modeled costs
+and benefits but no variation in decisions at either \(\lambda_1\) or
+\(\lambda_2\). Therefore, the value of information is low in both cases.
+Mathematically, the situation depicted by Scenario B amounts to the loss
+function \(L(\boldsymbol{\alpha, \pi,\lambda})\) having a value of 0 at
+each realization of our model (and given the choice of \(\lambda_1\) or
+\(\lambda_2\)): even under alternative draws of \(\boldsymbol{\pi}\), we
+always choose the same dominant strategy (\(\alpha^*\)), so there is no
+opportunity cost to making the wrong policy adoption decision.
+
+\begin{figure}
+\includegraphics[width=1\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/./figures/03_voi} \caption{\label{fig_voi_intuition}Intuition for Value of Information Theory}\label{fig:unnamed-chunk-1}
+\end{figure}
+
+\hypertarget{estimating-the-value-of-information-for-parameters-of-interest}{%
+\subsection{Estimating the Value of Information for Parameters of
+Interest}\label{estimating-the-value-of-information-for-parameters-of-interest}}
+
+It is often of interest to isolate the contribution of specific
+parameters (or sets of parameters) to the overall expected welfare loss
+from decisions based on current information (Strong, Oakley, and Brennan
+2014; Schlaifer and Raiffa 1961b; Jalal and Alarid-Escudero 2018). In
+that case, suppose we could obtain perfect information on the
+parameter(s) of interest \(\boldsymbol{\pi}_i\). The optimal policy
+decision would then be based on the policy alternative with the highest
+NWB after averaging over the conditional distribution of remaining
+parameters \(\boldsymbol{\pi}_{-i}\).
+
+\[
+\max_{\boldsymbol{\alpha}} E_{\boldsymbol{\pi_{-i}}|\boldsymbol{\pi_i}}NWB(\boldsymbol{\alpha},\boldsymbol{\pi},\lambda) 
+\] However, since \(\boldsymbol{\pi}_i\) remains unknown, we we must
+take the expectation over current information:
+
+\[
+E_{\boldsymbol{\pi_i}} \big [  \max_{\boldsymbol{\alpha}} E_{\boldsymbol{\pi_{-i}}|\boldsymbol{\pi_i}}NWB(\boldsymbol{\alpha},\boldsymbol{\pi}_i,\boldsymbol{\pi}_{-i},\lambda) \big ]
+\]
+
+Echoing equation \ref{eq:evpi} above, the \emph{expected value of
+partial perfect information} (EVPPI) is the difference between this
+quantity and the expected net welfare benefit of the dominant policy
+strategy (Strong, Oakley, and Brennan 2014; Schlaifer and Raiffa 1961b)
+:
+
+\begin{equation}
+\label{eq:evppi}
+EVPPI(\boldsymbol{\pi}_i,\lambda) = E_{\boldsymbol{\pi_i}} \big [  \max_{\boldsymbol{\alpha}} E_{\boldsymbol{\pi_{-i}}|\boldsymbol{\pi_i}}NWB(\boldsymbol{\alpha},\boldsymbol{\pi}_i,\boldsymbol{\pi}_{-i},\lambda) \big ] - 
+E_{\boldsymbol{\pi}}[NWB(\alpha^*,\boldsymbol{\pi},\lambda)]
+\end{equation}
+
+In practice, we can estimate the EVPI and the EVPPI by conducting large
+scale probabilistic sensitivity analyses (Strong, Oakley, and Brennan
+2014). To do this, we specify each parameter by its prior distribution
+and then re-estimate the model \(K\) times after taking draws from the
+joint distribution of parameters. For instance, a model parameter based
+on a regression coefficient might be specified with a normal
+distribution centered on the coefficient value and with standard
+deviation set to the estimated standard error. Alternatively, parameters
+based on judgment calls might enter the model centered on some value,
+but with a diffuse (e.g., uniform) prior spread over a plausible range.
+Finally, it may be the case that parameters co-vary. In that case, we
+would specify the joint distribution of parameters (e.g., using a
+multivariate normal distribution centered on estimated regression model
+coefficients and with variance-covariance matrix as estimated by the
+same model).
+
+Suppose we construct a \(K\)-sized sample of model outputs from a Monte
+Carlo-based sensitivity exercise. That is, we draw sets of parameters
+\(\boldsymbol{\pi}^{(1)},\ldots,\boldsymbol{\pi}^{(K)}\) and generate a
+\(K\)-sized vector of net welfare benefits for each policy alternative
+modeled (i.e.,
+\(NWB(\boldsymbol{\alpha},\boldsymbol{\pi}^{(1)},\lambda), \ldots, NWB(\boldsymbol{\alpha},\boldsymbol{\pi}^{(K)},\lambda)\).
+
+We can estimate second component of equation \ref{eq:evppi} as
+
+\begin{equation}
+\label{eq:evppi_est_2}
+\max_{\boldsymbol{\alpha}} \frac{1}{K} \sum_{k=1}^K NWB(\boldsymbol{\alpha},\boldsymbol{\pi}^{(k)},\lambda)
+\end{equation}
+
+Estimation of the conditional expectation in the first term in equation
+\ref{eq:evppi} is less straightforward. Borrowing from the approach in
+Strong, Oakley and Brennan (2014) we can express model outputs for this
+term as the sum of the conditional expectation plus a mean-zero error
+term:
+
+\begin{equation}
+\label{eq:evppi_est_1_1}
+NWB(\boldsymbol{\alpha},\boldsymbol{\pi^{(k)}},\lambda)  =  E_{\boldsymbol{\pi_{-i}}|\boldsymbol{\pi_i}=\boldsymbol{\pi_i}^{(k)}}NWB(\boldsymbol{\alpha},\boldsymbol{\pi}_i^{(k)},\boldsymbol{\pi}_{-i},\lambda)  + \epsilon^{(k)}
+\end{equation} In addition, the expectation in equation
+\ref{eq:evppi_est_1_1} can be thought of in terms of an unknown function
+\(g(\cdot)\) of \(\boldsymbol{\pi_i}\):
+
+\begin{equation}
+\label{eq:evppi_est_1}
+NWB(\boldsymbol{\alpha},\boldsymbol{\pi^{(k)}},\lambda)  = g(\boldsymbol{\alpha},\boldsymbol{\pi}_i^{(k)},\lambda) + \epsilon^{(k)}
+\end{equation}
+
+Based on equation \ref{eq:evppi_est_1}, we can estimate the conditional
+expectation in terms of a ``metamodel,'' or a regression model
+predicting how the net welfare benefit for a particular policy varies
+with unknown parameters of interest \(\boldsymbol{\pi}_i\). For example,
+a linear metamodel might specify the function \(g(\cdot)\) as a standard
+regression equation. Alternatively, we might not wish to impose a
+functional form and instead estimate \(g(\cdot)\) nonparametrically.
+Finally, we might suspect the underlying model has important
+nonlinearities in the parameters of interest, in which case we can
+appeal to machine learning methods to estimate \(g(\cdot)\). We will
+explore these various approaches in our modeling application to U.S.
+health policy in section TK below.
+
+\hypertarget{application-modeling-approaches-for-near-universal-coverage}{%
+\section{Application: Modeling Approaches for (Near) Universal
+Coverage}\label{application-modeling-approaches-for-near-universal-coverage}}
+
+We next turn to an application for projecting the welfare and coverage
+impacts of policies to achieve near- or fully-universal health insurance
+coverage in the U.S. The model and its results provide two distinct
+contributions. First, the model provides a proof-of-concept for
+embedding comparative welfare assessments and estimating the value of
+information within a counterfactual policy simulation model. In that
+sense, the modeling framework is a natural extension of Hendren and
+Sprung-Keyser (2020), who focus on estimation of the MVPF and the value
+of information from reducing sampling uncertainty in ex post policy
+evaluations.
+
+Second, the model is motivated by utility maximization theory but relies
+on a relatively circumscribed set of reduced form parameters. As such,
+the model fits within the recent ``sufficient statistics'' tradition in
+applied economics (Chetty 2009). Because of its simplicity and
+portability, the model provides a template for researchers who wish to
+draw on their own reduced form estimates to simulate counterfactual
+changes to U.S. health policy without the need for a detailed
+microsimulation model. Finally, I also discuss below how the model
+provides a useful intersection point between reduced form
+(elasticity-based) modeling approaches common in the applied health
+economics literature, and formal large-scale microsimulation models as
+used by the CBO and other research organizations.
+
+\hypertarget{discrete-choice-foundations}{%
+\subsection{Discrete Choice
+Foundations}\label{discrete-choice-foundations}}
+
+Consider a model of insurance choice among \(J\) alternatives (including
+the choice not to insure). Define \(U_{itj}\) as the utility for choice
+unit \(i\) from selecting choice \(j\) at time \(t\).
+
+\begin{equation}
+\label{eq:utility_1}
+U_{itj} = V(\mathbf{x_{itj}}, \mathbf{z_i})+ \epsilon_{itj}
+\end{equation}
+
+\noindent where \(\mathbf{x_{itj}}\) is a vector of time-varying
+attributes of the \(J\) choices and the health insurance unit (HIU), or
+the collection of related family members who could enroll under the same
+plan. Utility also depends on fixed attributes of the HIU
+(\(\mathbf{z_i}\)), and an unobservable component \(\epsilon_{itj}\).
+
+For HIU \(i\), the choice of insurance \(y_{it}\) is based on maximizing
+utility across the \(J\) alternatives at time \(t\):
+
+\[
+y_{it} = {\arg \max}_j [U_{itj}, j = 1, \dots, J]
+\]
+
+We next define a function \(B(\cdot)\) mapping utility from choice \(j\)
+to \(r_{ij} = P(y_{it} = j)\), the probability of individual \(i\)
+selecting choice \(j\).\footnote{As will become important in the next
+  section, we can also think of similar choice probabilities at some
+  time period \(t\) conditional on the choice at time \(t-1\):
+  \(P(y_{it} = s | y_{i,t-1}=r)\).} If the error terms \(\epsilon_{ij}\)
+are independent across units and are distributed Type I Extreme Value,
+we get a standard conditional logit for \(B(\cdot)\). However, other
+link functions---such as based on a nested logit or multinomial
+logit---could also be used.\footnote{As discussed in the Appendix, the
+  CBO health reform simulation model uses a nested logit formulation for
+  \(B(\cdot)\) in which individuals first select the type of coverage
+  (e.g., employer, non-group, public, uninsured) and then, conditional
+  on that choice, select among available plan types. An alternative
+  approach, however, is to simply specify a reduced form equation that
+  estimates or models \(r_{ij} = P(y_{it} = j)\) directly. This type of
+  approach is the basis for elasticity-based microsimulation models
+  previously used by the CBO and used by other modelers (Abraham 2013;
+  Glied and Tilipman 2010; Gruber 2000; ``How CBO and JCT Analyze Major
+  Proposals That Would Affect Health Insurance Coverage'' 2018; Sonier,
+  Boudreaux, and Blewett 2013).}
+
+\hypertarget{insurance-choice-as-a-markovian-process}{%
+\subsection{Insurance Choice as a Markovian
+Process}\label{insurance-choice-as-a-markovian-process}}
+
+However we specify the choice probabilities, the choice process at two
+discrete time periods (\(t-1, t\)) can be specified in terms of a Markov
+trace. Define the \emph{ex ante occupancy vector}
+\(\boldsymbol{\tilde p}\) summarizing the count or fraction of the
+population in each coverage category at time \(t-1\) (i.e., at
+baseline). We also define a transition probability matrix
+\(\boldsymbol{R_i} = [r_{irs}]\). Cells in this \(J \times J\) matrix
+are defined by transition probabilities based on conditional choice
+probabilities: \(r_{irs} = P(y_{it} = s | y_{i,t-1}=r)\).
+
+With the ex ante occupancy vector and transition probability matrix
+defined, it is straightforward to obtain the \emph{ex post occupancy
+vector} summarizing the fraction or number of people in each coverage
+category at time \(t\):
+
+\begin{equation}
+\label{eq:expost_1}
+\boldsymbol{p} = \boldsymbol{\tilde{p}'R}
+\end{equation}
+
+\hypertarget{simulating-counterfactual-policy-changes}{%
+\subsection{Simulating Counterfactual Policy
+Changes}\label{simulating-counterfactual-policy-changes}}
+
+A key takeaway is that the \emph{ex ante} occupancy vector
+(\(\boldsymbol{\tilde{p}}\)) and the set of transition probabilities
+(\(r_{rs}\)) are sufficient to model hypothetical changes to coverage
+policy. To see this, note that the \emph{ex ante} occupancy vector
+always remains fixed since it captures the coverage distribution at
+baseline, i.e., before any counterfactual reform. As such, it can be
+estimated using nationally-representative survey-based data (e.g., the
+Current Population Survey, the Medical Expenditure Panel Survey, etc.).
+
+Furthermore, we can express the transition probabilities in potential
+outcomes notation. That is, define \(r_{irs}(0)\) as the probability of
+transition between coverage categories under the status quo, and
+\(r_{irs}(1)\) as the probability of transition under a counterfactual
+reform scenario. We can similarly collect these transition probabilities
+in \(J \times J\) transition probability matrices \(\boldsymbol{R(0)}\)
+and \(\boldsymbol{R(1)}\).
+
+The impact of reform on coverage is summarized as
+
+\begin{equation}
+\label{eq:takeup_potout}
+  \boldsymbol{\theta} = \boldsymbol{p(1)} -  \boldsymbol{p(0)} 
+  = \boldsymbol{\tilde{p}'R(1)} - \boldsymbol{\tilde{p}'R(0)}
+\end{equation}
+
+With this simple modeling framework in hand, we can efficiently estimate
+counterfactual changes in the distribution of health insurance; all that
+is required is estimates of \(\boldsymbol{\tilde{p}}\) and the
+transition probabilities. As will be shown below, these changes in
+coverage can be combined with additional literature- or theory-based
+parameters to summarize the welfare benefits and costs of take-up (or
+loss) of public insurance, private insurance, etc. These estimates, in
+turn, facilitate comparative welfare assessments based on the MVPF of
+alternative coverage expansion policies.
+
+\hypertarget{methods}{%
+\section{Methods}\label{methods}}
+
+\hypertarget{simulating-expansion-of-in-kind-benefits}{%
+\subsection{Simulating Expansion of In-Kind
+Benefits}\label{simulating-expansion-of-in-kind-benefits}}
+
+\begin{itemize}
+\tightlist
+\item
+  Baseline occupancy vector
+\end{itemize}
+
+Our application of the modeling framework summarized by Equation
+\ref{eq:takeup_potout} curates and derives estimates of
+\(\boldsymbol{R(1)}\) and \(\boldsymbol{R(0)}\) from the applied
+literature. Additionally, we estimate the baseline coverage occupancy
+vector under the status quo \(\boldsymbol{\tilde{p}}\) based on the
+American Community Survey (ACS). The key inputs and ingredients for the
+modeling application are summarized in Table TK. For example, Graves et
+al.~(2020) outline estimation and inference procedures for directly
+estimating \(\boldsymbol{R(0)}\) and \(\boldsymbol{R(1)}\) to evaluate
+changes in coverage transitions after expansion of Medicaid. These
+estimates are then combined with parameters capturing individuals'
+valuation of public insurance from Finkelstein, Hendren, and Luttmer
+(2015b) to model the welfare benefits and costs of further expansion of
+in-kind public health insurance programs.
+
+In a similar vein, the willingness-to-pay (WTP) and cost curves
+estimated in Finkelstein, Hendren, and Shepard (2017) are used to derive
+coverage take-up probabilities and parameters summarizing costs and
+individuals' valuation of enrollment in private insurance plans. In
+principle, however, coverage takeup probabilities and parameters
+summarizing welfare benefits and costs of different policy scenarios
+could also be modeled directly using a detailed microsimulation
+model.\footnote{A standard assumption is that an exogenous policy change
+  does not affect the unobserved disturbance term \(\epsilon_{itj}\).
+  Moreover, policy changes will affect utility/take-up through their
+  impact on prices, quality, offers of employment-based insurance, etc.
+  To model these changes via microsimulation, attributes of plans and
+  individuals in the microdata are adjusted to reflect the modeled
+  reform scenario. In a utility maximization model, for example,
+  differences in predicted utility are used to derive new unit-level
+  choice probabilities under the modeled reform scenario. In a
+  reduced-form (elasticity-based) microsimulation model, price changes
+  for each of the \(J\) insurance options are simulated for units in the
+  microdata. Elasticities and further adjustments (e.g., income effects)
+  are then applied to derive new choice probabilities. These aggregated
+  choice probabilities, along with attributes of individuals (e.g.,
+  health status) and policy (e.g., subsidy schedules) are the building
+  blocks for other modeled outcome changes (e.g., cost of subsidies,
+  premiums, etc.).}
+
+\hypertarget{scenarios}{%
+\subsection{Scenarios}\label{scenarios}}
+
+Our application will consider two reform scenarios: (1) further
+expansion of Medicaid to all individuals under 150\% of the federal
+poverty line (FPL); vs.~(2) a price-linked (\$25/month) subsidy to
+facilitate the purchase of private insurance plans.
+
+To model these scenarios, we estimate the coverage distribution for
+individuals \textless150\% FPL using the 20TK American Community Survey
+(ACS). These estimates serve as the basis for the ex ante occupancy
+vector (\(\boldsymbol{\tilde{p}}\)) for the modeled population. As noted
+above and in Table TK, additional literature-based parameters (and their
+uncertainty distributions) are used to construct estimates of
+\(\boldsymbol{R(0)}\) and \(\boldsymbol{R(1)}\). In principle, however,
+future research could expand the number of scenarios to model a
+Medicare-for-all proposal and/or reforms to private insurance markets
+(e.g., mandates and changes to risk-adjustment and risk-pooling
+policies) in the spirit of Geruso et al.~2019.
+
+\hypertarget{model-calibration}{%
+\subsection{Model Calibration}\label{model-calibration}}
+
+\begin{itemize}
+\tightlist
+\item
+  Bayesian calibration using incremental mixture importance sampling
+\item
+  Method focuses on estimating the joint posterior distribuiton of model
+  parameters given model targets.
+\item
+  This can be used to construct model predictions that include
+  uncertainty.
+\end{itemize}
+
+\hypertarget{parameter-uncertainty}{%
+\subsection{Parameter Uncertainty}\label{parameter-uncertainty}}
+
+\hypertarget{metamodel}{%
+\subsection{Metamodel}\label{metamodel}}
+
+\hypertarget{results}{%
+\section{Results}\label{results}}
+
+We begin by summarizing the key parameters and inputs into the policy
+simulation. These values are summarized in Figure \ref{table_params}.
+Specifically, we simulate two policy scenarios: (1) expansion of
+Medicaid to those \textless138\% FPL and (2) expansion of coverage via a
+price-linked subsidy that fixes monthly premiums at \$36. With few
+exceptions all baseline values are drawn from the point estimates in
+Finkelstein, Hendren, and Luttmer (2019) and Finkelstein, Hendren, and
+Shepard (2019b).\footnote{We extrapolate somewhat from the estimates in
+  Finkelstein, Hendren, and Shepard (2019b) by assuming that a similar
+  demand curve exists \textless150\% FPL as at 150\%, as estimated in
+  that study.In their study, Finkelstein, Hendren, and Shepard (2019b)
+  estimate similar demand curves at 150\% FPL and 200\% FPL, indicating
+  that demand does not differ materially across low-income groups.}
+
+\begin{figure}
+\includegraphics[width=1\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/./figures/03_simulate-subsidy-baseline-parameters} \caption{\label{table_params}Baseline Parameters for Policy Simulation}\label{fig:unnamed-chunk-2}
+\end{figure}
+
+Figure \ref{fig_fhs19rep} replicates the willingness to pay and cost
+curves in Finkelstein, Hendren, and Luttmer (2019). Specific replication
+points are plotted in solid dots, and the solid curves reflect the
+extrapolated points derived from a third-degree polynomial fit to the
+points. Notably, the figure also plots fitted curves based on 1,000
+multivariate normal draws from the estimated coefficients and
+variance-covariance matrix in the underlying regression-discontinuity
+regressions. These curves demonstrate the degree to which estimation
+precision in the underlying RD regression contribute to uncertainty in
+the estimated WTP and cost curves. This uncertainty, along with
+uncertainty in other model parameters, will later feed through the
+probabilistic sensitivity analysis.
+
+\begin{figure}
+\includegraphics[width=1\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/./figures/01_FHS-replication-fig12} \caption{\label{fig_fhs19rep}Replication of Finkelstein, Hendren and Shepard (2019) Figure 13}\label{fig:unnamed-chunk-3}
+\end{figure}
+
+Based on the model parameters and their underlying uncertainty, we next
+estimate overall policy benefits and costs for the two coverage
+expansion scenarios. These points are plotted in Figure
+\ref{fig_cost_and_benefit}. Based on the baseline model parameters we
+estimate a MVPF of
+
+\newpage
+\begin{figure}
+\includegraphics[width=1\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/./figures/03_cost-and-benefit-estimates} \caption{\label{fig_cost_and_benefit}Cost and Benefit Estimates}\label{fig:unnamed-chunk-4}
+\end{figure}
+
+\newpage
+
+\newpage
+
+\begin{figure}
+\includegraphics[width=1\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/./figures/03_one-way-sensitivity_gov-incidence_lambda90} \caption{\label{fig_oneway90}One Way Sensitivity Analysis (MVPF Benchmark = 0.90)}\label{fig:unnamed-chunk-5}
+\end{figure}
+
+\textbf{Notes:} \newpage
+
+\begin{figure}
+\includegraphics[width=1\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/./figures/03_two-sensitivity_value-medicaid_gov-incidence} \caption{\label{fig_oneway90}One Way Sensitivity Analysis (MVPF Benchmark = 0.90)}\label{fig:unnamed-chunk-6}
+\end{figure}
+
+\textbf{Notes:}
+
+\newpage
+
+\begin{figure}
+\includegraphics[width=1\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/./figures/03_one-way-sensitivity_gov-incidence_lambda20} \caption{\label{fig_oneway20}One Way Sensitivity Analysis (lambda = 0.20)}\label{fig:unnamed-chunk-7}
+\end{figure}
+
+\textbf{Notes:} \newpage
+
+\begin{figure}
+\includegraphics[width=1\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/./figures/03_policy-acceptability-frontier} \caption{\label{fig_policy_acceptability_frontier}Policy Acceptablity Frontier}\label{fig:unnamed-chunk-8}
+\end{figure}
+
+\textbf{Notes:} \newpage
+
+\newpage
+\begin{figure}
+\includegraphics[width=1\linewidth]{/Users/gravesj/Dropbox/Projects/modeling-health-insurance/./figures/03_evppi} \caption{\label{fig_evppi}Expected Value of Partial Perfect Information}\label{fig:unnamed-chunk-9}
+\end{figure}
+
+\textbf{Notes:} \newpage
+
+--\textgreater{}
+
+\hypertarget{references}{%
+\section{References}\label{references}}
+
+\singlespacing
+
+\hypertarget{refs}{}
+\leavevmode\hypertarget{ref-AbrahamUsingmicrosimulationmodels2013}{}%
+Abraham, Jean Marie. 2013. ``Using Microsimulation Models to Inform US
+Health Policy Making.'' \emph{Health Services Research} 48 (2pt2):
+686--95.
+
+\leavevmode\hypertarget{ref-averyPoliciesPayoffsAddressing2019}{}%
+Avery, Christopher, Jessica Howell, Matea Pender, and Bruce Sacerdote.
+2019. ``Policies and Payoffs to Addressing America's College Graduation
+Deficit.'' \emph{Brookings Papers on Economic Activity}, no. Fall 2019
+(September).
+\url{https://www.brookings.edu/bpea-articles/policies-and-payoffs-to-addressing-americas-college-graduation-deficit/}.
+
+\leavevmode\hypertarget{ref-ballasSpatialMicrosimulationRural2006}{}%
+Ballas, D., G. P. Clarke, and E. Wiemers. 2006. ``Spatial
+Microsimulation for Rural Policy Analysis in Ireland: The Implications
+of CAP Reforms for the National Spatial Strategy.'' \emph{Journal of
+Rural Studies} 22 (3): 367--78.
+
+\leavevmode\hypertarget{ref-basuNutritionalPolicyChanges2013}{}%
+Basu, Sanjay, Hilary Seligman, and Jay Bhattacharya. 2013. ``Nutritional
+Policy Changes in the Supplemental Nutrition Assistance Program: A
+Microsimulation and Cost-Effectiveness Analysis.'' \emph{Medical
+Decision Making} 33 (7): 937--48.
+
+\leavevmode\hypertarget{ref-chetty_sufficient_2009}{}%
+Chetty, Raj. 2009. ``Sufficient Statistics for Welfare Analysis: A
+Bridge Between Structural and Reduced-Form Methods.'' \emph{Annu. Rev.
+Econ.} 1 (1): 451--88.
+
+\leavevmode\hypertarget{ref-claxton_using_2006}{}%
+Claxton, Karl P., and Mark J. Sculpher. 2006. ``Using Value of
+Information Analysis to Prioritise Health Research: Some Lessons from
+Recent UK Experience.'' \emph{PharmacoEconomics} 24 (11): 1055--68.
+\url{https://doi.org/10.2165/00019053-200624110-00003}.
+
+\leavevmode\hypertarget{ref-cordovaCOMPAREMicrosimulationModel2013}{}%
+Cordova, Amado, Federico Girosi, Sarah Nowak, Christine Eibner, and
+Kenneth Finegold. 2013. ``The COMPARE Microsimulation Model and the US
+Affordable Care Act.'' \emph{International Journal of Microsimulation} 6
+(3): 78--117.
+
+\leavevmode\hypertarget{ref-decosterHowRegressiveAre2010}{}%
+Decoster, Andr\a'e, Jason Loughrey, Cathal O'Donoghue, and Dirk
+Verwerft. 2010. ``How Regressive Are Indirect Taxes? A Microsimulation
+Analysis for Five European Countries.'' \emph{Journal of Policy Analysis
+and Management} 29 (2): 326--50.
+
+\leavevmode\hypertarget{ref-feenbergIntroductionTAXSIMModel1993}{}%
+Feenberg, Daniel, and Elisabeth Coutts. 1993. ``An Introduction to the
+TAXSIM Model.'' \emph{Journal of Policy Analysis and Management} 12 (1):
+189--94.
+
+\leavevmode\hypertarget{ref-finkelsteinWelfareAnalysisMeetsa}{}%
+Finkelstein, Amy. n.d. ``Welfare Analysis Meets Causal Inference: A
+Suggested Interpretation of Hendren.'' Working Paper. Working Paper.
+
+\leavevmode\hypertarget{ref-finkelsteinValueMedicaidInterpreting2015a}{}%
+Finkelstein, Amy, Nathaniel Hendren, and Erzo FP Luttmer. 2015a. ``The
+Value of Medicaid: Interpreting Results from the Oregon Health Insurance
+Experiment.'' National Bureau of Economic Research.
+
+\leavevmode\hypertarget{ref-FinkelsteinValueMedicaidInterpreting2015}{}%
+---------. 2015b. ``The Value of Medicaid: Interpreting Results from the
+Oregon Health Insurance Experiment.'' National Bureau of Economic
+Research.
+
+\leavevmode\hypertarget{ref-finkelstein_value_2019}{}%
+---------. 2019. ``The Value of Medicaid: Interpreting Results from the
+Oregon Health Insurance Experiment.'' \emph{Journal of Political
+Economy} Forthcoming.
+
+\leavevmode\hypertarget{ref-FinkelsteinSubsidizinghealthinsurance2017}{}%
+Finkelstein, Amy, Nathaniel Hendren, and Mark Shepard. 2017.
+``Subsidizing Health Insurance for Low-Income Adults: Evidence from
+Massachusetts.'' National Bureau of Economic Research.
+
+\leavevmode\hypertarget{ref-finkelsteinSubsidizingHealthInsurance2019}{}%
+---------. 2019a. ``Subsidizing Health Insurance for Low-Income Adults:
+Evidence from Massachusetts.'' \emph{American Economic Review} 109 (4):
+1530--67.
+
+\leavevmode\hypertarget{ref-finkelstein_subsidizing_2019}{}%
+---------. 2019b. ``Subsidizing Health Insurance for Low-Income Adults:
+Evidence from Massachusetts.'' \emph{American Economic Review} 109 (4):
+1530--67.
+
+\leavevmode\hypertarget{ref-GliedSimulationmodelinghealth2010}{}%
+Glied, Sherry, and Nicholas Tilipman. 2010. ``Simulation Modeling of
+Health Care Policy.'' \emph{Annual Review of Public Health} 31: 439--55.
+
+\leavevmode\hypertarget{ref-graves_differenceindifference_2020}{}%
+Graves, John, J. Michael McWilliams, and Laura A. Hatfield. 2020.
+``Difference-in-Difference Estimation for Transitions in Discrete
+Outcomes: Insurance Transitions After the Affordable Care Act's Medicaid
+Expansion.'' Working Paper.
+
+\leavevmode\hypertarget{ref-GruberMicrosimulationestimateseffects2000}{}%
+Gruber, Jonathan. 2000. ``Microsimulation Estimates of the Effects of
+Tax Subsidies for Health Insurance.'' \emph{National Tax Journal},
+329--42.
+
+\leavevmode\hypertarget{ref-hendrenPolicyElasticity2016}{}%
+Hendren, Nathaniel. 2016a. ``The Policy Elasticity.'' \emph{Tax Policy
+and the Economy} 30 (1): 51--89.
+
+\leavevmode\hypertarget{ref-Hendrenpolicyelasticity2016}{}%
+---------. 2016b. ``The Policy Elasticity.'' \emph{Tax Policy and the
+Economy} 30 (1): 51--89.
+
+\leavevmode\hypertarget{ref-hendrenUnifiedWelfareAnalysis2019}{}%
+Hendren, Nathaniel, and Ben Sprung-Keyser. 2019. ``A Unified Welfare
+Analysis of Government Policies.'' Working Paper. Working Paper.
+\url{https://opportunityinsights.org/wp-content/uploads/2019/07/Welfare_paper.pdf}.
+
+\leavevmode\hypertarget{ref-hendren_unified_2019}{}%
+Hendren, Nathaniel, and Ben Sprung-Keyser. 2019. ``A Unified Welfare
+Analysis of Government Policies.'' Working Paper.
+
+\leavevmode\hypertarget{ref-HowCBOJCT2018}{}%
+``How CBO and JCT Analyze Major Proposals That Would Affect Health
+Insurance Coverage.'' 2018. Congressional Budget Office.
+
+\leavevmode\hypertarget{ref-jalal_gaussian_2018}{}%
+Jalal, Hawre, and Fernando Alarid-Escudero. 2018. ``A Gaussian
+Approximation Approach for Value of Information Analysis.''
+\emph{Medical Decision Making} 38 (2): 174--88.
+
+\leavevmode\hypertarget{ref-kristensenReducingChildhoodObesity2014}{}%
+Kristensen, Alyson H., Thomas J. Flottemesch, Michael V. Maciosek,
+Jennifer Jenson, Gillian Barclay, Marice Ashe, Eduardo J. Sanchez, Mary
+Story, Steven M. Teutsch, and Ross C. Brownson. 2014. ``Reducing
+Childhood Obesity Through US Federal Policy: A Microsimulation
+Analysis.'' \emph{American Journal of Preventive Medicine} 47 (5):
+604--12.
+
+\leavevmode\hypertarget{ref-mozaffarianCosteffectivenessFinancialIncentives2018}{}%
+Mozaffarian, Dariush, Junxiu Liu, Stephen Sy, Yue Huang, Colin Rehm,
+Yujin Lee, Parke Wilde, Shafika Abrahams-Gessel, Thiago de Souza Veiga
+Jardim, and Tom Gaziano. 2018. ``Cost-Effectiveness of Financial
+Incentives and Disincentives for Improving Food Purchases and Health
+Through the US Supplemental Nutrition Assistance Program (SNAP): A
+Microsimulation Study.'' \emph{PLoS Medicine} 15 (10): e1002661.
+
+\leavevmode\hypertarget{ref-parmigianiDecisionTheoryPrinciples2009}{}%
+Parmigiani, Giovanni, and Lurdes Inoue. 2009a. \emph{Decision Theory:
+Principles and Approaches}. Vol. 812. John Wiley \& Sons.
+
+\leavevmode\hypertarget{ref-parmigiani_decision_2009}{}%
+---------. 2009b. \emph{Decision Theory: Principles and Approaches}.
+Vol. 812. John Wiley \& Sons.
+
+\leavevmode\hypertarget{ref-sandersRecommendationsConductMethodological2016}{}%
+Sanders, Gillian D., Peter J. Neumann, Anirban Basu, Dan W. Brock, David
+Feeny, Murray Krahn, Karen M. Kuntz, David O. Meltzer, Douglas K. Owens,
+and Lisa A. Prosser. 2016. ``Recommendations for Conduct, Methodological
+Practices, and Reporting of Cost-Effectiveness Analyses: Second Panel on
+Cost-Effectiveness in Health and Medicine.'' \emph{Jama} 316 (10):
+1093--1103.
+
+\leavevmode\hypertarget{ref-schlaiferAppliedStatisticalDecision1961}{}%
+Schlaifer, Robert, and Howard Raiffa. 1961a. \emph{Applied Statistical
+Decision Theory}.
+
+\leavevmode\hypertarget{ref-schlaifer_applied_1961}{}%
+---------. 1961b. \emph{Applied Statistical Decision Theory}.
+
+\leavevmode\hypertarget{ref-smithFoodAccessHealth2006}{}%
+Smith, Dianna M., Graham P. Clarke, Joan Ransley, and Janet Cade. 2006.
+``Food Access and Health: A Microsimulation Framework for Analysis.''
+\emph{Studies in Regional Science} 35 (4): 909--27.
+
+\leavevmode\hypertarget{ref-SonierMedicaidwelcomemateffect2013}{}%
+Sonier, Julie, Michel H. Boudreaux, and Lynn A. Blewett. 2013.
+``Medicaid `Welcome-Mat'Effect of Affordable Care Act Implementation
+Could Be Substantial.'' \emph{Health Affairs} 32 (7): 1319--25.
+
+\leavevmode\hypertarget{ref-strong_estimating_2014}{}%
+Strong, Mark, Jeremy E. Oakley, and Alan Brennan. 2014. ``Estimating
+Multiparameter Partial Expected Value of Perfect Information from a
+Probabilistic Sensitivity Analysis Sample: A Nonparametric Regression
+Approach.'' \emph{Medical Decision Making: An International Journal of
+the Society for Medical Decision Making} 34 (3): 311--26.
+\url{https://doi.org/10.1177/0272989X13505910}.
+
+\leavevmode\hypertarget{ref-sutherlandEUROMODEuropeanUnion2013a}{}%
+Sutherland, Holly, and Francesco Figari. 2013. ``EUROMOD: The European
+Union Tax-Benefit Microsimulation Model.'' \emph{International Journal
+of Microsimulation} 6 (1): 4--26.
+
+\leavevmode\hypertarget{ref-szaboTAXSIMAgentBased2008}{}%
+Szab\a'o, Attila, L\a'aszl\a'o Guly\a'as, and Istv\a'an J. T\a'oth.
+2008. ``TAXSIM Agent Based Tax Evasion Simulator.'' In \emph{5th
+Conference of the European Social Simulation Association, University of
+Brescia, Italy}.
+
+\leavevmode\hypertarget{ref-weinsteinRecommendationsPanelCosteffectiveness1996}{}%
+Weinstein, Milton C., Joanna E. Siegel, Marthe R. Gold, Mark S. Kamlet,
+and Louise B. Russell. 1996. ``Recommendations of the Panel on
+Cost-Effectiveness in Health and Medicine.'' \emph{Jama} 276 (15):
+1253--8.
+
+\newpage
+
+\hypertarget{appendix-tk-replication-of-finkelstein-hendren-and-shepard-2019}{%
+\section*{Appendix TK: Replication of Finkelstein, Hendren and Shepard
+(2019)}\label{appendix-tk-replication-of-finkelstein-hendren-and-shepard-2019}}
+\addcontentsline{toc}{section}{Appendix TK: Replication of Finkelstein,
+Hendren and Shepard (2019)}
+
+\end{document}

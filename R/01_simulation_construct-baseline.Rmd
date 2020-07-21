@@ -32,7 +32,7 @@ df_w <-
   mutate(exclude_state = as.integer(expansion_date != "2014-01-01")) %>% 
   # Expansion state varies in the underling data due to moves. Just keeping state at 
   # baseline. 
-  select(idnumber,contains("state"), sex, race, weight = wpfinwgt) %>% 
+  select(idnumber,contains("state"), sex, race, weight = wpfinwgt, inc_pov) %>% 
   ungroup() 
 
 df_sipp <- 
@@ -76,7 +76,7 @@ df <-                                     # Data frame for estimation
   filter(month %in% months_to_model) %>% 
   filter(months_in_sample == months_to_model[2]) %>% 
   mutate(post_expansion = as.integer(month>12)) %>% 
-  select(insurance_type,expansion_state,post_expansion,idnumber,month,state,weight) %>% 
+  select(insurance_type,expansion_state,post_expansion,idnumber,month,state,weight,inc_pov) %>% 
   arrange(idnumber,month) %>% 
   filter(!is.na(insurance_type)) %>% 
   group_by(idnumber) %>% 
@@ -97,6 +97,7 @@ dd_ests_over_time <-
   2:24 %>% 
   map(~(df_sipp %>% 
           ungroup() %>% 
+          filter(inc_pov<=1.5) %>% 
     filter(in_twoper_sample==1) %>% 
   count(month,insurance_type,expansion_state,wt = weight) %>% 
   group_by(month,expansion_state) %>% 

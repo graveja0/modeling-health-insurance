@@ -675,29 +675,43 @@ cov_sim <- function(params) {
     as.matrix()
   
   baseline <- t(p) %*% R
-  reformed <- t(p) %*% (R + DD) 
+  expmedicaid <- t(p) %*% (R + DD) 
   
-  est_wtp <- calculate_wtp_public(params)
+  mvpf_med <- calculate_wtp_public(params)
+  mvpf_subsidy <- simulate_subsidy(params)
   
+  R_subsidy <- R
+  R_subsidy[4,2] <- R_subsidy[4,4] * params$frac_uninsured_elig *  mvpf_subsidy$takeup
+  R_subsidy[4,4] <- 1 - sum(R_subsidy[4,1:3])
+  
+  subsidy <- t(p) %*% R_subsidy
   # Now need to include estimation of MVPF cost and benefits.
   
   out <- 
-    list(baseline = baseline, reformed = reformed) %>% 
+    list(baseline = baseline, med = expmedicaid, subsidy = subsidy) %>% 
     bind_rows() %>% 
     tbl_df() %>% 
     mutate(type = insurance_sipp_lut) %>% 
-    select(type,baseline,reformed) %>% 
+    select(type,baseline,med, subsidy) %>% 
     gather(key,value,-type) %>% 
     mutate(iteration = 1) %>% 
     unite("tmp",key,type) %>% 
     spread(tmp,value) %>% 
-    mutate(wtp = est_wtp$wtp) %>% 
-    mutate(mvpf_denom = est_wtp$mvpf_denom) %>%
-    mutate(mvpf_num = est_wtp$mvpf_num) %>% 
-    mutate(mvpf = est_wtp$mvpf, 
-           N = est_wtp$N) %>% 
-    select(-iteration) %>% 
-    select(wtp,contains("mvpf"),N,contains("baseline"),contains("reformed"))
+    bind_cols(mvpf_med %>% data.frame()) %>% 
+    rename(med_mvpf = mvpf, 
+           med_mvpf_num = mvpf_num,
+           med_mvpf_denom = mvpf_denom,
+           med_wtp = wtp,
+           med_cost = cost,
+           med_N = N) %>% 
+    bind_cols(mvpf_subsidy %>% data.frame()) %>% 
+    rename(subsidy_takeup = takeup,
+           subsidy_C_H = C_H, 
+           subsidy_uncomp = uncomp, 
+           subsidy_mvpf_num = mvpf_num,
+           subsidy_mvpf_denom = mvpf_denom,
+           subsidy_mvpf = mvpf)
+  
   
   return(out)
 }
@@ -705,7 +719,7 @@ cov_sim <- function(params) {
 calculate_wtp_public <- function(params, scaling_factor = 1) {
   
   #The net cost of Medicaid equals the average increase in medical spending due to Medicaid
-  # plus the average decrease in out-of-pocket spenigndue to Medicaid (see equation 22). 
+  # plus the average decrease in out-of-pocket spenign due to Medicaid (see equation 22). 
   p_1 <- params$OOP_Tx / params$G
   
   p_0 <- params$OOP_Cx / params$G_Cx
