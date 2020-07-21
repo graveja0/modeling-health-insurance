@@ -187,7 +187,7 @@ p <- df_est %>%
   ylab("$ per month") + 
   xlab("Fraction in plan (=s)") #+ 
   #ggtitle("Replication of Finkelstein, Hendren and Shepard (2019)\nFigure 12")
-#direct.label(p)
+
 ```
 
 
@@ -293,7 +293,7 @@ df_validation_uncert_quant <-
 #   geom_dl(aes(label = key), method = list("last.polygons",cex =0.9,fontfamily = "Gill Sans"))  + 
 #   scale_x_continuous(limits = c(0,1.3),breaks = seq(0,1,0.2)) + 
 #   theme(legend.position="none")
-
+ 
 p2 <- 
   p + 
   geom_line(
@@ -328,9 +328,97 @@ p2 <-
         plot.background = element_blank()) +
   geom_dl(aes(label = key), method = list("last.polygons",cex =0.9,fontfamily = "Gill Sans"))  +
   scale_x_continuous(limits = c(0,1.1),breaks = seq(0,1,0.2)) +
-  theme(legend.position="none")
+  theme(legend.position="none") 
 
-ggsave(p2,filename = here("./figures/01_FHS-replication-fig12.png"))
+p_uncert <- df_est %>% 
+  filter(fpl_group=="fpl150") %>% 
+  gather(key,value,-fpl_group,-type,-s) %>% 
+  filter(type=="H") %>% 
+  ggplot(aes(x = s , colour = key)) + 
+  #facet_wrap(fpl_group~type) + 
+  #geom_line(lty=3) + 
+  ggthemes::theme_clean() +  
+  #ylim(c(0,2000)) + 
+  xlim(c(0,1)) +
+  geom_point(data = 
+               df_est_points %>% 
+               filter(fpl_group=="fpl150") %>% 
+               gather(key,value,-fpl_group,-type,-s) %>% 
+               filter(type=="H") , 
+             aes(y = value)
+  ) +
+  geom_line(aes(y = value)) +
+  geom_line(data = 
+              df_est_points %>% 
+              filter(fpl_group=="fpl150") %>% 
+              gather(key,value,-fpl_group,-type,-s) %>% 
+              filter(type=="H") , 
+            aes(y = value)
+  ) + 
+  ylab("$ per month") + 
+  xlab("Fraction in plan (=s)") + 
+  geom_ribbon(data = 
+                df_uncert_wtp_and_costs_data %>% 
+                filter(fpl_group=="fpl150" & type == "H") %>% 
+                gather(key,value,-iteration,-fpl_group,-type,-s) %>% 
+                filter(key=="wtp") %>% 
+                group_by(s) %>% 
+                summarise_at(vars(value),list(low = ~quantile(.,0.025,na.rm=TRUE), high = ~quantile(.,0.975,na.rm=TRUE))) %>% 
+                ungroup() %>% 
+                mutate(key = "wtp"), 
+              aes(x = s, ymin = low, ymax = high), alpha = 0.1, fill = "blue", lty=0) + 
+  geom_ribbon(data = 
+                df_uncert_wtp_and_costs_data %>% 
+                filter(fpl_group=="fpl150" & type == "H") %>% 
+                gather(key,value,-iteration,-fpl_group,-type,-s) %>% 
+                filter(key=="cost")%>% 
+                group_by(s) %>% 
+                summarise_at(vars(value),list(low = ~quantile(.,0.025,na.rm=TRUE), high = ~quantile(.,0.975,na.rm=TRUE))) %>% 
+                ungroup() %>% 
+                mutate(key = "cost"), 
+              aes(x = s, ymin = pmax(0,low), ymax = high), alpha = 0.1, fill = "green",lty=0) +
+  geom_ribbon(data = 
+                df_uncert_wtp_and_costs_data %>% 
+                filter(fpl_group=="fpl150" & type == "H") %>% 
+                gather(key,value,-iteration,-fpl_group,-type,-s) %>% 
+                filter(key=="avg_cost")%>% 
+                group_by(s) %>% 
+                summarise_at(vars(value),list(low = ~quantile(.,0.025,na.rm=TRUE), high = ~quantile(.,0.975,na.rm=TRUE))) %>% 
+                ungroup() %>% 
+                mutate(key = "avg_cost"), 
+              aes(x = s, ymin = pmax(0,low), ymax = high), alpha = 0.1, fill = "red",lty = 0) +
+   geom_dl(aes(label = key,y = value), method = list("last.polygons",cex =0.9,fontfamily = "Gill Sans")) +
+  scale_x_continuous(limits = c(0,1.1),breaks = seq(0,1,0.2)) +
+  theme(legend.position="none") 
+
+ggsave(p_uncert,filename = here("./figures/01_FHS-replication-fig12.png"), width = 8, height = 6)
+
+####################
+# For Presentation
+####################
+df_subsidy25 <- 
+  data.frame(fpl = rep(c(150),1), type = "H", prem = c(36))  %>% 
+    inner_join(df_wtp_and_costs,c("fpl","type")) %>% 
+    mutate(estimate = intercept + wtp * prem + i_wtp_2 * prem^2 + i_wtp_3 * prem ^3) %>% 
+    mutate(fpl_group = paste0("fpl",fpl)) %>% 
+    select(fpl_group,type,wtp = prem, outcome,estimate,iteration) %>% 
+    spread(outcome,estimate) %>% 
+    gather(key,value,-fpl_group,-type,-s,-iteration)
+
+
+p_prez <- 
+  p + 
+   geom_point(data = df_subsidy25  %>% filter(fpl_group=="fpl150"),colour = "black",pch = 2)  +
+    theme(text = element_text(family = "Gill Sans"),
+        plot.title = element_text(family = "Gill Sans", face = "plain"),
+        plot.background = element_blank()) +
+  geom_dl(aes(label = key), method = list("last.polygons",cex =0.9,fontfamily = "Gill Sans"))  +
+  scale_x_continuous(limits = c(0,1.1),breaks = seq(0,1,0.2)) +
+  theme(legend.position="none") + 
+  geom_hline(aes(yintercept = 36), lty=2) +
+  scale_x_continuous(limits = c(0,1.1),breaks = sort(c(seq(0,1,0.2),0.85)))
+ggsave(p_prez , filename = here("./figures/01_FHS-replication-fig12-for-presentation.png"))
+
 ```
 \newpage 
 ```{r}
